@@ -1,0 +1,134 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}Заявка #{{ ticket.id }} - {{ ticket.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Заявка #{{ ticket.id }}</h2>
+                {% if user.is_support or user.is_support_specialist %}
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-toggle="dropdown">
+                            Статус: {{ ticket.get_status_display }}
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item change-status" href="#" data-status="open">Открыта</a>
+                            <a class="dropdown-item change-status" href="#" data-status="in_progress">В работе</a>
+                            <a class="dropdown-item change-status" href="#" data-status="closed">Закрыта</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <span class="badge badge-{% if ticket.status == 'open' %}primary{% elif ticket.status == 'in_progress' %}warning{% else %}success{% endif %}">
+                        {{ ticket.get_status_display }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ ticket.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ ticket.description }}</p>
+                    <div class="text-muted">
+                        <small>
+                            Создана: {{ ticket.created_at|date:"d.m.Y H:i" }}<br>
+                            Категория: {{ ticket.category.name }}<br>
+                            {% if ticket.support_user %}
+                                Специалист: {{ ticket.support_user.get_full_name|default:ticket.support_user.username }}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="messages-container mb-4">
+                {% for message in ticket.messages.all %}
+                    <div class="card mb-3 {% if message.user == ticket.user %}border-primary{% else %}border-success{% endif %}">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>{{ message.user.get_full_name|default:message.user.username }}</strong>
+                                <small class="text-muted">{{ message.created_at|date:"d.m.Y H:i" }}</small>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">{{ message.content }}</p>
+                            {% if message.file %}
+                                <a href="{{ message.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="fas fa-download"></i> Скачать файл
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if ticket.status != 'closed' %}
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Ответить</h5>
+                        <form method="post" action="{% url 'reply_ticket' ticket.id %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <textarea name="text" class="form-control" rows="3" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Прикрепить файл:</label>
+                                <input type="file" name="file" class="form-control-file">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Отправить</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Информация</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Автор:</strong> {{ ticket.user.get_full_name|default:ticket.user.username }}</p>
+                    <p><strong>Создана:</strong> {{ ticket.created_at|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Категория:</strong> {{ ticket.category.name }}</p>
+                    {% if ticket.support_user %}
+                        <p><strong>Специалист:</strong> {{ ticket.support_user.get_full_name|default:ticket.support_user.username }}</p>
+                    {% endif %}
+                    <p><strong>Статус:</strong> {{ ticket.get_status_display }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('.change-status').click(function(e) {
+        e.preventDefault();
+        var status = $(this).data('status');
+        
+        $.ajax({
+            url: '{% url "update_ticket_status" ticket.id %}',
+            method: 'POST',
+            data: {
+                status: status
+            },
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                location.reload();
+            },
+            error: function(xhr) {
+                alert(xhr.responseJSON.error || 'Произошла ошибка при изменении статуса');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

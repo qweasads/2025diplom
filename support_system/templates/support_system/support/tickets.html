@@ -1,0 +1,133 @@
+{% extends 'support_system/base.html' %}
+{% load support_tags %}
+
+{% block title %}Заявки в поддержку - Система поддержки{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Заявки в поддержку</h2>
+    
+    <div class="btn-group mb-4" role="group">
+        <a href="{% url 'support_tickets' %}" class="btn btn-outline-primary {% if not filter %}active{% endif %}">
+            Все заявки
+        </a>
+        <a href="{% url 'new_tickets' %}" class="btn btn-outline-primary {% if filter == 'new' %}active{% endif %}">
+            Новые заявки
+            {% if new_tickets_count > 0 %}
+                <span class="badge badge-danger">{{ new_tickets_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'awaiting_response' %}" class="btn btn-outline-primary {% if filter == 'awaiting' %}active{% endif %}">
+            Ожидают ответа
+            {% if awaiting_response_count > 0 %}
+                <span class="badge badge-warning">{{ awaiting_response_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+
+    {% if tickets %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Тема</th>
+                        <th>Категория</th>
+                        <th>Статус</th>
+                        <th>Создана</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                        <tr>
+                            <td>#{{ ticket.id }}</td>
+                            <td>
+                                <a href="{% url 'ticket_detail' ticket.id %}">{{ ticket.subject }}</a>
+                                {% if ticket.messages.count == 0 %}
+                                    <span class="badge badge-info">Новая</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ ticket.category.name }}</td>
+                            <td>
+                                <span class="badge badge-{% if ticket.status == 'open' %}primary{% elif ticket.status == 'in_progress' %}warning{% elif ticket.status == 'closed' %}success{% endif %}">
+                                    {{ ticket.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ ticket.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                {% if not ticket.support_user %}
+                                    <button class="btn btn-sm btn-success take-ticket" data-ticket-id="{{ ticket.id }}">
+                                        Принять в работу
+                                    </button>
+                                {% elif ticket.support_user == request.user %}
+                                    <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-primary">
+                                        Ответить
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            {% if filter == 'new' %}
+                На данный момент нет новых заявок в ваших категориях.
+            {% elif filter == 'awaiting' %}
+                Нет заявок, ожидающих ответа более 24 часов.
+            {% else %}
+                Нет доступных заявок в ваших категориях.
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно для подтверждения -->
+<div class="modal fade" id="confirmTakeTicketModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите принять эту заявку в работу?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success" id="confirmTakeTicket">Принять</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('.take-ticket').click(function() {
+        var ticketId = $(this).data('ticket-id');
+        var button = $(this);
+        
+        $.ajax({
+            url: '/support/take/' + ticketId + '/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                button.replaceWith('<a href="/tickets/' + ticketId + '/" class="btn btn-sm btn-primary">Ответить</a>');
+                location.reload();
+            },
+            error: function(xhr) {
+                alert(xhr.responseJSON.error || 'Произошла ошибка при принятии заявки');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

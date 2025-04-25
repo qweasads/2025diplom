@@ -1,0 +1,84 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}Ответ на заявку #{{ ticket.id }} - {{ ticket.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Ответ на заявку #{{ ticket.id }}</h2>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ ticket.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ ticket.description }}</p>
+                    <div class="text-muted">
+                        <small>
+                            Создана: {{ ticket.created_at|date:"d.m.Y H:i" }}<br>
+                            Категория: {{ ticket.category.name }}<br>
+                            {% if ticket.support_user %}
+                                Специалист: {{ ticket.support_user.get_full_name|default:ticket.support_user.username }}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Ваш ответ</h5>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="text">Текст сообщения:</label>
+                            <textarea name="text" id="text" class="form-control" rows="5" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="file">Прикрепить файл:</label>
+                            <input type="file" name="file" id="file" class="form-control-file">
+                            <small class="form-text text-muted">Максимальный размер файла: 5 МБ</small>
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">Отправить</button>
+                            <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-secondary">Отмена</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">История сообщений</h5>
+                </div>
+                <div class="card-body">
+                    {% if ticket.messages.all %}
+                        {% for message in ticket.messages.all %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ message.user.get_full_name|default:message.user.username }}</strong>
+                                    <small class="text-muted">{{ message.created_at|date:"d.m.Y H:i" }}</small>
+                                </div>
+                                <p class="mb-1">{{ message.text }}</p>
+                                {% if message.file %}
+                                    <a href="{{ message.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="fas fa-download"></i> Скачать файл
+                                    </a>
+                                {% endif %}
+                            </div>
+                            {% if not forloop.last %}
+                                <hr>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">Нет сообщений</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,47 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}Профиль - Система поддержки{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">Профиль пользователя</h1>
+        
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Информация о пользователе</h5>
+                <div class="mb-3">
+                    <strong>Имя пользователя:</strong> {{ user.username }}
+                </div>
+                <div class="mb-3">
+                    <strong>Имя:</strong> {{ user.first_name }}
+                </div>
+                <div class="mb-3">
+                    <strong>Фамилия:</strong> {{ user.last_name }}
+                </div>
+                <div class="mb-3">
+                    <strong>Email:</strong> {{ user.email }}
+                </div>
+                <div class="mb-3">
+                    <strong>Телефон:</strong> {{ user.phone|default:"Не указан" }}
+                </div>
+                <div class="mb-3">
+                    <strong>Роль:</strong>
+                    {% if user.is_admin %}
+                        Администратор
+                    {% elif user.is_support %}
+                        Специалист поддержки
+                    {% else %}
+                        Пользователь
+                    {% endif %}
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{% url 'user_tickets' %}" class="btn btn-primary">Мои заявки</a>
+                    <a href="{% url 'notifications' %}" class="btn btn-secondary">Уведомления</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

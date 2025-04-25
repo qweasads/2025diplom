@@ -1,0 +1,39 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}Мои заявки - Система поддержки{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Мои заявки</h1>
+            <a href="{% url 'create_ticket' %}" class="btn btn-primary">Создать заявку</a>
+        </div>
+        
+        {% if tickets %}
+            <div class="list-group">
+                {% for ticket in tickets %}
+                    <a href="{% url 'ticket_detail' ticket.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ ticket.title }}</h5>
+                            <small>{{ ticket.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                        <p class="mb-1">{{ ticket.description|truncatechars:200 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small>Раздел: {{ ticket.category.name }}</small>
+                            <span class="badge {% if ticket.status == 'open' %}bg-danger{% elif ticket.status == 'in-progress' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ ticket.get_status_display }}
+                            </span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                У вас пока нет заявок.
+                <a href="{% url 'create_ticket' %}" class="btn btn-primary ms-3">Создать первую заявку</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

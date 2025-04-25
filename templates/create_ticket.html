@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Создание заявки | Система поддержки{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Создание новой заявки</h2>
+                <p>Заполните форму для создания новой заявки</p>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'create_ticket' %}" enctype="multipart/form-data" id="ticket-form">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="title">Тема заявки *</label>
+                        <input type="text" id="title" name="title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Раздел *</label>
+                        <select id="category" name="category" class="form-control" required>
+                            <option value="">Выберите раздел</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Описание проблемы *</label>
+                        <textarea id="description" name="description" class="form-control" rows="6" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="file-upload">Прикрепить файлы</label>
+                        <input type="file" id="file-upload" name="files" class="form-control-file" multiple>
+                        <small class="form-text text-muted">Вы можете прикрепить до 5 файлов (макс. размер каждого файла: 5 МБ)</small>
+                        <div class="file-list mt-2"></div>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Создать заявку</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

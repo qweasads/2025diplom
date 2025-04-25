@@ -1,0 +1,38 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}{{ article.title }} - База знаний{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'knowledge_base' %}">База знаний</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ article.title }}</li>
+            </ol>
+        </nav>
+        
+        <h1 class="mb-4">{{ article.title }}</h1>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-secondary">{{ article.category.name }}</span>
+                    <small class="text-muted">Обновлено: {{ article.updated_at|date:"d.m.Y H:i" }}</small>
+                </div>
+                
+                <div class="article-content">
+                    {{ article.content|linebreaks }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'knowledge_base' %}" class="btn btn-secondary">Назад к списку</a>
+            {% if user.is_admin %}
+                <a href="{% url 'edit_knowledge_base' article.id %}" class="btn btn-primary">Редактировать</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

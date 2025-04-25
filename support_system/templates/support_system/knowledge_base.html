@@ -1,0 +1,30 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}База знаний - Система поддержки{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">База знаний</h1>
+        
+        {% if articles %}
+            <div class="list-group">
+                {% for article in articles %}
+                    <a href="{% url 'knowledge_base_article' article.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ article.title }}</h5>
+                            <small class="text-muted">{{ article.category.name }}</small>
+                        </div>
+                        <p class="mb-1">{{ article.content|truncatewords:30 }}</p>
+                        <small class="text-muted">Обновлено: {{ article.updated_at|date:"d.m.Y H:i" }}</small>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                В базе знаний пока нет статей.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

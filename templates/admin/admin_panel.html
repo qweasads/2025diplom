@@ -1,0 +1,589 @@
+{% extends 'base.html' %}
+
+{% block title %}Админ-панель | Система поддержки{% endblock %}
+
+{% block content %}
+<div class="admin-panel">
+    <h1 class="page-title">Админ-панель</h1>
+    
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <i class="fas fa-ticket-alt"></i>
+            <h3>{{ total_tickets }}</h3>
+            <p>Всего заявок</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-clock"></i>
+            <h3>{{ open_tickets }}</h3>
+            <p>Открытых заявок</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-check-circle"></i>
+            <h3>{{ closed_tickets }}</h3>
+            <p>Закрытых заявок</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <h3>{{ total_users }}</h3>
+            <p>Пользователей</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-headset"></i>
+            <h3>{{ total_support }}</h3>
+            <p>Специалистов поддержки</p>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-folder"></i>
+            <h3>{{ total_categories }}</h3>
+            <p>Разделов</p>
+        </div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="users">Пользователи</div>
+        <div class="tab" data-tab="support">Специалисты поддержки</div>
+        <div class="tab" data-tab="categories">Разделы</div>
+        <div class="tab" data-tab="tickets">Заявки</div>
+        <div class="tab" data-tab="analytics">Аналитика</div>
+    </div>
+    
+    <div id="users" class="tab-content active">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="card-title">Управление пользователями</h2>
+                    <a href="{% url 'create_user' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Добавить пользователя
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="search-box mb-3">
+                    <input type="text" id="search-users" class="form-control" placeholder="Поиск пользователей...">
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Email</th>
+                            <th>Роль</th>
+                            <th>Дата регистрации</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.get_full_name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.is_admin %}
+                                <span class="badge badge-danger">Администратор</span>
+                                {% elif user.is_support %}
+                                <span class="badge badge-warning">Специалист поддержки</span>
+                                {% else %}
+                                <span class="badge badge-info">Пользователь</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"d.m.Y" }}</td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge badge-success">Активен</span>
+                                {% else %}
+                                <span class="badge badge-secondary">Неактивен</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'edit_user' user.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'delete_user' user.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить этого пользователя?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Нет пользователей</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% include 'pagination.html' with page=users %}
+            </div>
+        </div>
+    </div>
+    
+    <div id="support" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="card-title">Управление специалистами поддержки</h2>
+                    <a href="{% url 'create_support' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Добавить специалиста
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="search-box mb-3">
+                    <input type="text" id="search-support" class="form-control" placeholder="Поиск специалистов...">
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Email</th>
+                            <th>Разделы</th>
+                            <th>Активных заявок</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for support in support_users %}
+                        <tr>
+                            <td>{{ support.id }}</td>
+                            <td>{{ support.get_full_name }}</td>
+                            <td>{{ support.email }}</td>
+                            <td>
+                                {% for category in support.categories.all %}
+                                <span class="badge badge-info">{{ category.name }}</span>
+                                {% empty %}
+                                <span class="text-muted">Не назначены</span>
+                                {% endfor %}
+                            </td>
+                            <td>{{ support.active_tickets_count }}</td>
+                            <td>
+                                {% if support.is_active %}
+                                <span class="badge badge-success">Активен</span>
+                                {% else %}
+                                <span class="badge badge-secondary">Неактивен</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'edit_support' support.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'delete_support' support.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить этого специалиста?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Нет специалистов поддержки</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% include 'pagination.html' with page=support_users %}
+            </div>
+        </div>
+    </div>
+    
+    <div id="categories" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="card-title">Управление разделами</h2>
+                    <a href="{% url 'create_category' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Добавить раздел
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Название</th>
+                            <th>Описание</th>
+                            <th>Кол-во заявок</th>
+                            <th>Назначенные специалисты</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                        <tr>
+                            <td>{{ category.id }}</td>
+                            <td>{{ category.name }}</td>
+                            <td>{{ category.description|truncatechars:50 }}</td>
+                            <td>{{ category.tickets_count }}</td>
+                            <td>
+                                {% for support in category.support_users.all %}
+                                <span class="badge badge-info">{{ support.get_full_name }}</span>
+                                {% empty %}
+                                <span class="text-muted">Не назначены</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <a href="{% url 'edit_category' category.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'delete_category' category.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить этот раздел?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">Нет разделов</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div id="tickets" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Все заявки</h2>
+            </div>
+            <div class="card-body">
+                <div class="filters mb-3">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="filter-category">Раздел</label>
+                                <select id="filter-category" class="form-control">
+                                    <option value="">Все разделы</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="filter-status">Статус</label>
+                                <select id="filter-status" class="form-control">
+                                    <option value="">Все статусы</option>
+                                    <option value="open">Открыт</option>
+                                    <option value="in-progress">В процессе</option>
+                                    <option value="closed">Закрыт</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="search-tickets">Поиск</label>
+                                <input type="text" id="search-tickets" class="form-control" placeholder="Поиск заявок...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Тема</th>
+                            <th>Раздел</th>
+                            <th>Пользователь</th>
+                            <th>Специалист</th>
+                            <th>Статус</th>
+                            <th>Дата создания</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tickets-table">
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td>#{{ ticket.id }}</td>
+                            <td>{{ ticket.title }}</td>
+                            <td>{{ ticket.category.name }}</td>
+                            <td>{{ ticket.user.get_full_name }}</td>
+                            <td>
+                                {% if ticket.support_user %}
+                                {{ ticket.support_user.get_full_name }}
+                                {% else %}
+                                <span class="text-muted">Не назначен</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status status-{{ ticket.status }}">
+                                    {{ ticket.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ ticket.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'assign_ticket' ticket.id %}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-user-plus"></i>
+                                </a>
+                                <a href="{% url 'delete_ticket' ticket.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить эту заявку?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">Нет заявок</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% include 'pagination.html' with page=tickets %}
+            </div>
+        </div>
+    </div>
+    
+    <div id="analytics" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Аналитика</h2>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Заявки по разделам</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Заявки по статусам</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Динамика заявок</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="ticketsTimelineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Среднее время ответа</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="responseTimeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Активность специалистов</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="supportActivityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Данные для графиков
+        const categoryData = {
+            labels: [{% for category in categories %}'{{ category.name }}',{% endfor %}],
+            datasets: [{
+                label: 'Количество заявок',
+                data: [{% for category in categories %}{{ category.tickets_count }},{% endfor %}],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        const statusData = {
+            labels: ['Открыт', 'В процессе', 'Закрыт'],
+            datasets: [{
+                label: 'Количество заявок',
+                data: [{{ open_tickets }}, {{ in_progress_tickets }}, {{ closed_tickets }}],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        const timelineData = {
+            labels: [{% for date in timeline_dates %}'{{ date }}',{% endfor %}],
+            datasets: [{
+                label: 'Новые заявки',
+                data: [{% for count in timeline_counts %}{{ count }},{% endfor %}],
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1,
+                fill: true
+            }]
+        };
+
+        const responseTimeData = {
+            labels: [{% for support in support_users %}'{{ support.get_full_name }}',{% endfor %}],
+            datasets: [{
+                label: 'Среднее время ответа (часы)',
+                data: [{% for support in support_users %}{{ support.avg_response_time }},{% endfor %}],
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        const supportActivityData = {
+            labels: [{% for support in support_users %}'{{ support.get_full_name }}',{% endfor %}],
+            datasets: [{
+                label: 'Количество ответов',
+                data: [{% for support in support_users %}{{ support.responses_count }},{% endfor %}],
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        // Создание графиков
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'pie',
+            data: categoryData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Распределение заявок по разделам'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: statusData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Распределение заявок по статусам'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('ticketsTimelineChart'), {
+            type: 'line',
+            data: timelineData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Динамика новых заявок'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('responseTimeChart'), {
+            type: 'bar',
+            data: responseTimeData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Среднее время ответа специалистов (часы)'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('supportActivityChart'), {
+            type: 'bar',
+            data: supportActivityData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Активность специалистов поддержки'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

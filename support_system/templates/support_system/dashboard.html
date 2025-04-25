@@ -1,0 +1,107 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}Панель управления - Система поддержки{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Панель управления</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Мои заявки</h5>
+                        <a href="{% url 'create_ticket' %}" class="btn btn-primary btn-sm">Создать заявку</a>
+                    </div>
+                    <div class="card-body">
+                        {% if user_tickets %}
+                            <div class="list-group">
+                                {% for ticket in user_tickets %}
+                                    <a href="{% url 'ticket_detail' ticket.id %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h5 class="mb-1">{{ ticket.title }}</h5>
+                                            <small>{{ ticket.created_at|date:"d.m.Y H:i" }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ ticket.description|truncatechars:100 }}</p>
+                                        <small>Статус: {{ ticket.get_status_display }}</small>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-3">
+                                <a href="{% url 'user_tickets' %}" class="btn btn-outline-primary">Все заявки</a>
+                            </div>
+                        {% else %}
+                            <p>У вас пока нет заявок.</p>
+                            <a href="{% url 'create_ticket' %}" class="btn btn-primary">Создать первую заявку</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Уведомления</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if notifications %}
+                            <div class="list-group">
+                                {% for notification in notifications %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ notification.text }}</h6>
+                                            <small>{{ notification.created_at|date:"d.m.Y H:i" }}</small>
+                                        </div>
+                                        {% if notification.ticket %}
+                                            <a href="{% url 'ticket_detail' notification.ticket.id %}" class="btn btn-sm btn-outline-primary mt-2">Перейти к заявке</a>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-3">
+                                <a href="{% url 'notifications' %}" class="btn btn-outline-primary">Все уведомления</a>
+                            </div>
+                        {% else %}
+                            <p>У вас нет новых уведомлений.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if user.is_support %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Заявки в поддержку</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if support_tickets %}
+                            <div class="list-group">
+                                {% for ticket in support_tickets %}
+                                    <a href="{% url 'ticket_detail' ticket.id %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h5 class="mb-1">{{ ticket.title }}</h5>
+                                            <small>{{ ticket.created_at|date:"d.m.Y H:i" }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ ticket.description|truncatechars:100 }}</p>
+                                        <small>Статус: {{ ticket.get_status_display }}</small>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-3">
+                                <a href="{% url 'support_tickets' %}" class="btn btn-outline-primary">Все заявки в поддержку</a>
+                            </div>
+                        {% else %}
+                            <p>У вас нет назначенных заявок в поддержку.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

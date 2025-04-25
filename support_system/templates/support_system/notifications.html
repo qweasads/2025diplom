@@ -1,0 +1,32 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}Уведомления - Система поддержки{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Уведомления</h1>
+        
+        {% if notifications %}
+            <div class="list-group">
+                {% for notification in notifications %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ notification.text }}</h5>
+                            <small>{{ notification.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                        {% if notification.ticket %}
+                            <p class="mb-1">Заявка: {{ notification.ticket.title }}</p>
+                            <a href="{% url 'ticket_detail' notification.ticket.id %}" class="btn btn-sm btn-primary">Перейти к заявке</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                У вас нет уведомлений.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

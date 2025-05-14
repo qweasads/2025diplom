@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib import messages
-from .models import User, Category, Ticket, TicketMessage, FAQ, KnowledgeBase
+from django.utils.translation import gettext_lazy as _
+from .models import User, Category, Ticket, TicketMessage, File, Content, Notification
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
@@ -51,16 +52,16 @@ class TicketMessageAdmin(admin.ModelAdmin):
     search_fields = ('content', 'user__username')
     raw_id_fields = ('ticket', 'user')
 
-@admin.register(FAQ)
-class FAQAdmin(admin.ModelAdmin):
-    list_display = ('question', 'category', 'order')
-    list_filter = ('category',)
-    search_fields = ('question', 'answer')
-    ordering = ('category', 'order')
+@admin.register(File)
+class FileAdmin(admin.ModelAdmin):
+    list_display = ('filename', 'content_type', 'object_id', 'uploaded_at')
+    list_filter = ('content_type', 'uploaded_at')
+    search_fields = ('filename',)
+    date_hierarchy = 'uploaded_at'
 
-@admin.register(KnowledgeBase)
-class KnowledgeBaseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'created_at', 'updated_at')
-    list_filter = ('category', 'created_at')
+@admin.register(Content)
+class ContentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'type', 'category', 'order', 'updated_at')
+    list_filter = ('type', 'category', 'updated_at')
     search_fields = ('title', 'content')
-    date_hierarchy = 'created_at'
+    ordering = ('category', 'order', '-updated_at')

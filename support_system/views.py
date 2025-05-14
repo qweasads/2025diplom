@@ -14,8 +14,22 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils import timezone
 from datetime import timedelta
-from .models import User, Category, Ticket, TicketMessage, FAQ, KnowledgeBase, Notification, TicketFile, MessageFile
-from .forms import UserRegistrationForm, UserLoginForm, UserForm, SupportUserForm, CategoryForm, TicketForm, TicketMessageForm, FAQForm, KnowledgeBaseForm
+from .models import User, Category, Ticket, TicketMessage, File, Content, Notification, MessageFile, FAQ, KnowledgeBase
+from .forms import (
+    UserRegistrationForm, 
+    UserLoginForm, 
+    UserForm, 
+    SupportUserForm, 
+    CategoryForm, 
+    TicketForm, 
+    TicketMessageForm, 
+    ContentForm,
+    FAQForm,
+    KnowledgeBaseForm
+)
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
 
 def index(request):
     """Главная страница"""
@@ -31,7 +45,7 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('dashboard')
+                return redirect('index')
             else:
                 messages.error(request, 'Неверное имя пользователя или пароль')
     else:
@@ -45,7 +59,7 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('dashboard')
+            return redirect('index')
     else:
         form = UserRegistrationForm()
     return render(request, 'support_system/register.html', {'form': form})
@@ -76,7 +90,7 @@ def profile(request):
 @login_required
 def notifications(request):
     """Уведомления пользователя"""
-    notifications = request.user.notifications.filter(is_read=False)
+    notifications = request.user.notifications.all().order_by('-created_at')
     return render(request, 'support_system/notifications.html', {'notifications': notifications})
 
 def faq(request):
@@ -103,6 +117,9 @@ def user_tickets(request):
 @login_required
 def create_ticket(request):
     """Создание новой заявки"""
+    if request.user.is_support:
+        messages.error(request, 'Специалист поддержки не может создавать заявки.')
+        return redirect('dashboard')
     if request.method == 'POST':
         form = TicketForm(request.POST, request.FILES)
         if form.is_valid():
@@ -138,10 +155,12 @@ def ticket_detail(request, ticket_id):
     if request.user != ticket.user and not request.user.is_support and not request.user.is_admin:
         messages.error(request, 'У вас нет доступа к этой заявке')
         return redirect('user_tickets')
-    messages = ticket.messages.all().order_by('created_at')
+    # Меняем статус только если тикет открыт (не закрыт) и только если это специалист
+    if request.user.is_support and ticket.status == 'open':
+        ticket.status = 'in-progress'
+        ticket.save()
     return render(request, 'support_system/tickets/detail.html', {
-        'ticket': ticket,
-        'messages': messages
+        'ticket': ticket
     })
 
 @login_required
@@ -158,13 +177,19 @@ def reply_ticket(request, ticket_id):
         message = TicketMessage(
             ticket=ticket,
             user=request.user,
-            content=request.POST.get('text', '')
+            content=request.POST.get('content', '')
         )
-        
-        if 'file' in request.FILES:
-            message.file = request.FILES['file']
-        
         message.save()
+        
+        # Обрабатываем прикрепленные файлы
+        if 'files' in request.FILES:
+            files = request.FILES.getlist('files')
+            for file in files:
+                MessageFile.objects.create(
+                    message=message,
+                    file=file,
+                    filename=file.name
+                )
         
         # Если ответил специалист поддержки, меняем статус на "в работе"
         if request.user == ticket.support_user and ticket.status == 'open':
@@ -191,31 +216,19 @@ def reply_ticket(request, ticket_id):
 @login_required
 def update_ticket_status(request, ticket_id):
     """Обновление статуса заявки"""
-    if not request.user.is_support and not request.user.is_support_specialist:
+    if not request.user.is_support and not request.user.is_support_specialist and not request.user.is_admin:
         return JsonResponse({'error': 'Недостаточно прав'}, status=403)
-    
     if request.method != 'POST':
         return JsonResponse({'error': 'Метод не поддерживается'}, status=405)
-    
     ticket = get_object_or_404(Ticket, id=ticket_id)
     status = request.POST.get('status')
-    
     # Проверяем, что статус допустимый
     if status not in dict(Ticket.STATUS_CHOICES):
         return JsonResponse({'error': 'Неверный статус'}, status=400)
-    
-    # Проверяем права на изменение
-    if ticket.support_user != request.user and not request.user.is_admin:
-        return JsonResponse({'error': 'Вы не можете изменять статус этой заявки'}, status=403)
-    
-    # Сохраняем предыдущий статус для уведомления
+    # Теперь любой саппорт может менять статус
     old_status = ticket.status
-    
-    # Обновляем статус
     ticket.status = status
     ticket.save()
-    
-    # Создаем уведомление для пользователя
     if old_status != status:
         status_display = dict(Ticket.STATUS_CHOICES)[status]
         Notification.objects.create(
@@ -224,7 +237,6 @@ def update_ticket_status(request, ticket_id):
             type='status',
             text=f'Статус вашей заявки #{ticket.id} изменен на "{status_display}"'
         )
-    
     return JsonResponse({
         'status': 'success',
         'new_status': status,
@@ -234,7 +246,7 @@ def update_ticket_status(request, ticket_id):
 @login_required
 def support_tickets(request, filter=None):
     """Список заявок для специалиста поддержки"""
-    if not request.user.is_support and not request.user.is_support_specialist:
+    if not request.user.is_support and not request.user.is_admin:
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('dashboard')
     
@@ -262,10 +274,15 @@ def support_tickets(request, filter=None):
         ).distinct()
     else:
         # Все заявки, доступные специалисту
-        tickets = tickets.filter(
-            Q(category__support_users=request.user) |  # Заявки из категорий специалиста
-            Q(support_user=request.user)  # Или уже назначенные специалисту
-        ).distinct()
+        if request.user.is_admin:
+            # Администратор видит все заявки
+            tickets = tickets.all()
+        else:
+            # Специалист поддержки видит только свои заявки
+            tickets = tickets.filter(
+                Q(category__support_users=request.user) |  # Заявки из категорий специалиста
+                Q(support_user=request.user)  # Или уже назначенные специалисту
+            ).distinct()
     
     tickets = tickets.order_by('-created_at')
     
@@ -359,21 +376,49 @@ def delete_user(request, user_id):
 
 # Управление специалистами поддержки
 @login_required
+def support_users(request):
+    """Список специалистов поддержки"""
+    if not request.user.is_admin:
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('dashboard')
+    
+    support_users = User.objects.filter(is_support=True).annotate(
+        active_tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='in_progress'))
+    )
+    categories = Category.objects.all()
+    
+    return render(request, 'support_system/admin/support_users.html', {
+        'support_users': support_users,
+        'categories': categories
+    })
+
+@login_required
 def create_support(request):
     """Создание специалиста поддержки"""
     if not request.user.is_admin:
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('dashboard')
+    
     if request.method == 'POST':
-        form = UserRegistrationForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.is_support = True
-            user.save()
-            return redirect('admin_support')
-    else:
-        form = UserRegistrationForm()
-    return render(request, 'support_system/admin/support_form.html', {'form': form})
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        category_ids = request.POST.getlist('categories')
+        
+        try:
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                is_support=True
+            )
+            user.categories.set(category_ids)
+            messages.success(request, 'Специалист поддержки успешно создан')
+            return redirect('support_users')
+        except Exception as e:
+            messages.error(request, f'Ошибка при создании специалиста: {str(e)}')
+    
+    return redirect('support_users')
 
 @login_required
 def edit_support(request, user_id):
@@ -381,15 +426,24 @@ def edit_support(request, user_id):
     if not request.user.is_admin:
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('dashboard')
+    
     user = get_object_or_404(User, id=user_id, is_support=True)
+    
     if request.method == 'POST':
-        form = UserRegistrationForm(request.POST, instance=user)
-        if form.is_valid():
-            form.save()
-            return redirect('admin_support')
-    else:
-        form = UserRegistrationForm(instance=user)
-    return render(request, 'support_system/admin/support_form.html', {'form': form})
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        category_ids = request.POST.getlist('categories')
+        
+        try:
+            user.username = username
+            user.email = email
+            user.save()
+            user.categories.set(category_ids)
+            messages.success(request, 'Данные специалиста успешно обновлены')
+        except Exception as e:
+            messages.error(request, f'Ошибка при обновлении данных: {str(e)}')
+    
+    return redirect('support_users')
 
 @login_required
 def delete_support(request, user_id):
@@ -398,8 +452,23 @@ def delete_support(request, user_id):
         return JsonResponse({'error': 'Недостаточно прав'}, status=403)
     
     user = get_object_or_404(User, id=user_id, is_support=True)
-    user.delete()
-    return JsonResponse({'status': 'success'})
+    
+    try:
+        user.delete()
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def get_support_categories(request, user_id):
+    """Получение категорий специалиста поддержки"""
+    if not request.user.is_admin:
+        return JsonResponse({'error': 'Недостаточно прав'}, status=403)
+    
+    user = get_object_or_404(User, id=user_id, is_support=True)
+    categories = list(user.categories.values_list('id', flat=True))
+    
+    return JsonResponse({'categories': categories})
 
 # Управление разделами
 @login_required
@@ -570,7 +639,7 @@ def take_ticket(request, ticket_id):
     try:
         # Назначаем заявку специалисту
         ticket.support_user = request.user
-        ticket.status = 'in_progress'
+        ticket.status = 'in-progress'
         ticket.save()
         
         # Создаем уведомление для пользователя
@@ -592,31 +661,35 @@ def take_ticket(request, ticket_id):
         }, status=500)
 
 def notifications_processor(request):
-    """Контекстный процессор для добавления счетчиков уведомлений"""
+    """Контекстный процессор для добавления уведомлений и их количества, а также новых заявок для саппортов"""
     context = {}
-    
     if request.user.is_authenticated:
+        notifications_qs = request.user.notifications.filter(is_read=False).order_by('-created_at')
+        context['notifications'] = notifications_qs[:5]
+        context['notifications_count'] = notifications_qs.count()
         if request.user.is_support:
-            # Новые заявки из категорий специалиста
-            context['new_tickets_count'] = Ticket.objects.filter(
+            # Новые заявки из категорий специалиста (без support_user и статус open)
+            new_tickets_count = Ticket.objects.filter(
                 category__support_users=request.user,
                 support_user__isnull=True,
                 status='open'
             ).count()
-            
+            context['new_tickets_count'] = new_tickets_count
             # Заявки, ожидающие ответа более 24 часов
             day_ago = timezone.now() - timedelta(days=1)
             context['waiting_response_count'] = Ticket.objects.filter(
                 support_user=request.user,
                 status='in_progress'
             ).filter(
-                Q(messages__isnull=True) |  # Нет сообщений
-                Q(messages__created_at__lt=day_ago)  # Последнее сообщение старше 24 часов
+                Q(messages__isnull=True) |
+                Q(messages__created_at__lt=day_ago)
             ).distinct().count()
-        else:
-            # Обычные уведомления для пользователей
-            context['notifications_count'] = request.user.notifications.filter(
-                is_read=False
-            ).count()
-    
     return context
+
+@login_required
+def mark_all_notifications_read(request):
+    """Отметить все уведомления как прочитанные"""
+    if request.method == 'POST':
+        request.user.notifications.update(is_read=True)
+        messages.success(request, 'Все уведомления отмечены как прочитанные')
+    return redirect('notifications')

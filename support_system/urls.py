@@ -9,6 +9,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('profile/', views.profile, name='profile'),
     path('notifications/', views.notifications, name='notifications'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
     path('faq/', views.faq, name='faq'),
     path('knowledge-base/', views.knowledge_base, name='knowledge_base'),
     path('knowledge-base/<int:article_id>/', views.knowledge_base_article, name='knowledge_base_article'),

@@ -1,15 +1,28 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
-
-from .models import User, Ticket, TicketMessage, Category, FAQ, KnowledgeBase
+from .models import User, Ticket, TicketMessage, Category, Content, FAQ, KnowledgeBase
+from django.core.exceptions import ValidationError
 
 
 class UserRegistrationForm(UserCreationForm):
-    """Форма регистрации пользователя"""
+    """Форма регистрации пользователя с минимальной валидацией пароля (только длина и совпадение)"""
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2:
+            if password1 != password2:
+                raise ValidationError(_('Введённые пароли не совпадают.'))
+            if len(password1) < 8:
+                raise ValidationError(_('Пароль слишком короткий. Минимум 8 символов.'))
+        return password2
     class Meta:
         model = User
         fields = ('username', 'email', 'password1', 'password2', 'first_name', 'last_name', 'phone')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Удаляем все стандартные валидаторы пароля кроме длины
+        self.fields['password1'].validators = [v for v in self.fields['password1'].validators if v.__class__.__name__ == 'MinimumLengthValidator']
 
 
 class UserLoginForm(forms.Form):
@@ -85,26 +98,35 @@ class TicketForm(forms.ModelForm):
 
 class TicketMessageForm(forms.ModelForm):
     """Форма сообщения в заявке"""
+    content = forms.CharField(required=False, widget=forms.Textarea, label=_('Текст сообщения'))
     class Meta:
         model = TicketMessage
         fields = ('content',)
 
 
+class ContentForm(forms.ModelForm):
+    """Форма для контента (FAQ и База знаний)"""
+    class Meta:
+        model = Content
+        fields = ('type', 'category', 'title', 'content', 'order')
+        widgets = {
+            'content': forms.Textarea(attrs={'rows': 10}),
+        }
+
+
 class FAQForm(forms.ModelForm):
-    """Форма для FAQ"""
     class Meta:
         model = FAQ
-        fields = ('category', 'question', 'answer', 'order')
+        fields = ['category', 'question', 'answer', 'order']
         widgets = {
-            'answer': forms.Textarea(attrs={'rows': 6}),
+            'answer': forms.Textarea(attrs={'rows': 4}),
         }
 
 
 class KnowledgeBaseForm(forms.ModelForm):
-    """Форма для базы знаний"""
     class Meta:
         model = KnowledgeBase
-        fields = ('title', 'content', 'category')
+        fields = ['title', 'content', 'category']
         widgets = {
             'content': forms.Textarea(attrs={'rows': 10}),
         }

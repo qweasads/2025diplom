@@ -3,37 +3,82 @@
 {% block title %}Мои заявки - Система поддержки{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Мои заявки</h1>
-            <a href="{% url 'create_ticket' %}" class="btn btn-primary">Создать заявку</a>
-        </div>
-        
-        {% if tickets %}
-            <div class="list-group">
-                {% for ticket in tickets %}
-                    <a href="{% url 'ticket_detail' ticket.id %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">{{ ticket.title }}</h5>
-                            <small>{{ ticket.created_at|date:"d.m.Y H:i" }}</small>
-                        </div>
-                        <p class="mb-1">{{ ticket.description|truncatechars:200 }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small>Раздел: {{ ticket.category.name }}</small>
-                            <span class="badge {% if ticket.status == 'open' %}bg-danger{% elif ticket.status == 'in-progress' %}bg-warning{% else %}bg-success{% endif %}">
-                                {{ ticket.get_status_display }}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Главная</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Заявки</li>
+        </ol>
+    </nav>
+    <div class="row">
+        <div class="col-lg-8">
+            {% if tickets %}
+                <div class="list-group mb-3">
+                    {% for ticket in tickets %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap mb-2 rounded shadow-sm">
+                            <div>
+                                <a href="{% url 'ticket_detail' ticket.id %}" class="fw-bold text-primary text-decoration-none">
+                                    Заявка #{{ ticket.id }}
+                                </a>
+                                <span class="text-muted small ms-2">- {{ ticket.created_at|date:"d.m.Y H:i" }}</span>
+                                <div class="mt-1 text-dark">{{ ticket.title }}</div>
+                                <div class="text-muted small">{{ ticket.description|truncatechars:60 }}</div>
+                            </div>
+                            <span class="badge bg-secondary" style="min-width: 70px; font-size: 0.95em;">
+                                {% if ticket.status == 'open' %}Открыта{% elif ticket.status == 'in-progress' %}В работе{% else %}Закрыта{% endif %}
                             </span>
                         </div>
-                    </a>
-                {% endfor %}
+                    {% endfor %}
+                </div>
+                {% if is_paginated %}
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                        {% endif %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">У вас пока нет заявок.</div>
+            {% endif %}
+        </div>
+        <div class="col-lg-4">
+            <div class="card p-3 mb-3" style="background: #e9f0fa;">
+                <form method="get" class="mb-2">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Статус</label>
+                        <select name="status" id="status" class="form-select" onchange="this.form.submit()">
+                            <option value="">Все</option>
+                            <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Открытые</option>
+                            <option value="in-progress" {% if request.GET.status == 'in-progress' %}selected{% endif %}>В работе</option>
+                            <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Закрытые</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sort" class="form-label">Сортировка</label>
+                        <select name="sort" id="sort" class="form-select" onchange="this.form.submit()">
+                            <option value="-created_at" {% if request.GET.sort == '-created_at' or not request.GET.sort %}selected{% endif %}>Последние созданные</option>
+                            <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Старые сначала</option>
+                        </select>
+                    </div>
+                </form>
             </div>
-        {% else %}
-            <div class="alert alert-info">
-                У вас пока нет заявок.
-                <a href="{% url 'create_ticket' %}" class="btn btn-primary ms-3">Создать первую заявку</a>
-            </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %} 

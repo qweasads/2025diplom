@@ -82,42 +82,7 @@
             <h3 class="card-title">Переписка</h3>
         </div>
         <div class="card-body">
-            <div class="chat">
-                {% for message in ticket.messages.all %}
-                <div class="chat-message {% if message.user == user %}chat-message-user{% endif %}">
-                    <div class="chat-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="chat-content">
-                        {{ message.content|linebreaks }}
-                        {% if message.files.all %}
-                        <div class="message-files">
-                            <h5>Прикрепленные файлы:</h5>
-                            <div class="file-list">
-                                {% for file in message.files.all %}
-                                <div class="file-item">
-                                    <i class="fas fa-file"></i>
-                                    <span class="file-name">{{ file.filename }}</span>
-                                    <a href="{{ file.file.url }}" class="btn btn-sm btn-primary" target="_blank">
-                                        <i class="fas fa-download"></i> Скачать
-                                    </a>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                        <div class="chat-meta">
-                            <span class="chat-author">{{ message.user.get_full_name }}</span>
-                            <span class="chat-time">{{ message.created_at|date:"d.m.Y H:i" }}</span>
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="text-center">
-                    <p>Нет сообщений</p>
-                </div>
-                {% endfor %}
-            </div>
+            <!-- Блок переписки удалён по просьбе пользователя -->
             
             {% if ticket.status != 'closed' %}
             <div class="chat-form">

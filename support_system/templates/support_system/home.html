@@ -1,0 +1,120 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}Главная - Система поддержки{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 mb-4">Добро пожаловать в систему поддержки</h1>
+                <p class="lead mb-4">Мы всегда готовы помочь вам с решением любых вопросов и проблем.</p>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'create_ticket' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-plus-circle me-2"></i>Создать заявку
+                    </a>
+                    <a href="{% url 'faq' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-question-circle me-2"></i>FAQ
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <img src="https://via.placeholder.com/600x400" alt="Support Illustration" class="img-fluid rounded shadow">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-headset fa-3x mb-3 text-primary"></i>
+                    <h3 class="card-title">Профессиональная поддержка</h3>
+                    <p class="card-text">Наши специалисты всегда готовы помочь вам с решением любых вопросов.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-3x mb-3 text-primary"></i>
+                    <h3 class="card-title">Быстрое решение</h3>
+                    <p class="card-text">Мы стремимся решать ваши проблемы в кратчайшие сроки.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-3x mb-3 text-primary"></i>
+                    <h3 class="card-title">База знаний</h3>
+                    <p class="card-text">Доступ к полезной информации и часто задаваемым вопросам.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Мои последние заявки</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_tickets %}
+                        {% for ticket in user_tickets|slice:":5" %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-1">#{{ ticket.id }} - {{ ticket.title }}</h6>
+                                <small class="text-muted">{{ ticket.created_at|date:"d.m.Y H:i" }}</small>
+                            </div>
+                            <span class="status-badge status-{{ ticket.status }}">
+                                {{ ticket.get_status_display }}
+                            </span>
+                        </div>
+                        {% if not forloop.last %}<hr>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">У вас пока нет заявок</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'user_tickets' %}" class="btn btn-primary btn-sm">Все заявки</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Последние уведомления</h5>
+                </div>
+                <div class="card-body">
+                    {% if notifications %}
+                        {% for notification in notifications|slice:":5" %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-1">{{ notification.text }}</h6>
+                                <small class="text-muted">{{ notification.created_at|date:"d.m.Y H:i" }}</small>
+                            </div>
+                            {% if not notification.is_read %}
+                            <span class="badge bg-danger">Новое</span>
+                            {% endif %}
+                        </div>
+                        {% if not forloop.last %}<hr>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">Нет новых уведомлений</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'notifications' %}" class="btn btn-primary btn-sm">Все уведомления</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

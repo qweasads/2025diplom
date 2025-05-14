@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import path
 from support_system import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # Админ-панель Django
@@ -13,6 +15,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('profile/', views.profile, name='profile'),
     path('notifications/', views.notifications, name='notifications'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
     
     # Заявки пользователей
     path('tickets/', views.user_tickets, name='user_tickets'),
@@ -27,8 +30,18 @@ urlpatterns = [
     path('support/awaiting/', views.support_tickets, {'filter': 'awaiting'}, name='awaiting_response'),
     path('support/take/<int:ticket_id>/', views.take_ticket, name='take_ticket'),
     
+    # Управление специалистами поддержки
+    path('support-management/', views.support_users, name='support_users'),
+    path('support-management/create/', views.create_support, name='create_support'),
+    path('support-management/<int:user_id>/edit/', views.edit_support, name='edit_support'),
+    path('support-management/<int:user_id>/delete/', views.delete_support, name='delete_support'),
+    path('support-management/<int:user_id>/categories/', views.get_support_categories, name='get_support_categories'),
+    
     # FAQ и база знаний
     path('faq/', views.faq, name='faq'),
     path('knowledge-base/', views.knowledge_base, name='knowledge_base'),
     path('knowledge-base/<int:article_id>/', views.knowledge_base_article, name='knowledge_base_article'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

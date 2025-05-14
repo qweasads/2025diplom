@@ -1,0 +1,79 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}Создание заявки - Система поддержки{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Создание новой заявки</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="id_title" class="form-label">Заголовок заявки</label>
+                            <input type="text" class="form-control form-control-lg" id="id_title" name="title" required>
+                            <div class="form-text">Кратко опишите суть проблемы</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_category" class="form-label">Категория</label>
+                            <select class="form-select form-select-lg" id="id_category" name="category" required>
+                                <option value="" selected disabled>Выберите категорию</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label">Описание проблемы</label>
+                            <textarea class="form-control" id="id_description" name="description" rows="6" required></textarea>
+                            <div class="form-text">Подробно опишите проблему, с которой вы столкнулись</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_files" class="form-label">Прикрепить файл:</label>
+                            <input type="file" class="form-control d-none" id="id_files" name="files" multiple>
+                            <label for="id_files" id="customFileLabel" class="btn btn-outline-secondary">Выбрать файлы</label>
+                            <span id="file-chosen" class="ms-2 text-muted"></span>
+                            <div class="form-text">Вы можете прикрепить несколько файлов (максимум 5 МБ каждый)</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Отправить заявку
+                            </button>
+                            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('id_files');
+    const label = document.getElementById('customFileLabel');
+    const fileChosen = document.getElementById('file-chosen');
+    input.addEventListener('change', function() {
+        if (input.files.length > 0) {
+            fileChosen.textContent = input.files.length === 1 ? input.files[0].name : input.files.length + ' файла(ов) выбрано';
+        } else {
+            fileChosen.textContent = '';
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

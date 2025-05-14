@@ -13,7 +13,13 @@
             {% for field in form %}
                 <div class="mb-3">
                     <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                    {{ field }}
+                    {% if field.field.widget.input_type == 'file' %}
+                        <input type="file" name="{{ field.name }}" id="custom-create-file" class="form-control d-none" {% if field.field.widget.attrs.multiple %}multiple{% endif %}>
+                        <label for="custom-create-file" id="customFileLabelCreate" class="btn btn-outline-secondary">Выбрать файл(ы)</label>
+                        <span id="file-chosen-create" class="ms-2 text-muted"></span>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
                     {% if field.help_text %}
                         <div class="form-text">{{ field.help_text }}</div>
                     {% endif %}
@@ -32,4 +38,24 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('custom-create-file');
+    const label = document.getElementById('customFileLabelCreate');
+    const fileChosen = document.getElementById('file-chosen-create');
+    if (input) {
+        input.addEventListener('change', function() {
+            if (input.files.length > 0) {
+                fileChosen.textContent = input.files.length === 1 ? input.files[0].name : input.files.length + ' файла(ов) выбрано';
+            } else {
+                fileChosen.textContent = '';
+            }
+        });
+    }
+});
+</script>
 {% endblock %} 

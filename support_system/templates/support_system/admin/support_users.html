@@ -1,0 +1,180 @@
+{% extends 'support_system/base.html' %}
+
+{% block title %}Управление специалистами поддержки - Система поддержки{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Управление специалистами поддержки</h2>
+    
+    <div class="mb-4">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSupportModal">
+            Добавить специалиста поддержки
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Имя пользователя</th>
+                    <th>Email</th>
+                    <th>Категории</th>
+                    <th>Активные заявки</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for support_user in support_users %}
+                <tr>
+                    <td>#{{ support_user.id }}</td>
+                    <td>{{ support_user.username }}</td>
+                    <td>{{ support_user.email }}</td>
+                    <td>
+                        {% for category in support_user.categories.all %}
+                            <span class="badge bg-info">{{ category.name }}</span>
+                        {% endfor %}
+                    </td>
+                    <td>{{ support_user.active_tickets_count }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary edit-support" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#editSupportModal"
+                                data-user-id="{{ support_user.id }}"
+                                data-username="{{ support_user.username }}"
+                                data-email="{{ support_user.email }}">
+                            Редактировать
+                        </button>
+                        <button class="btn btn-sm btn-danger delete-support" 
+                                data-user-id="{{ support_user.id }}"
+                                data-username="{{ support_user.username }}">
+                            Удалить
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Модальное окно добавления специалиста -->
+<div class="modal fade" id="addSupportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить специалиста поддержки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'create_support' %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categories" class="form-label">Категории</label>
+                        <select multiple class="form-select" id="categories" name="categories" required>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования специалиста -->
+<div class="modal fade" id="editSupportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать специалиста поддержки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="editSupportForm">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="edit_username" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" id="edit_username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="edit_email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_categories" class="form-label">Категории</label>
+                        <select multiple class="form-select" id="edit_categories" name="categories" required>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Обработка редактирования
+    $('.edit-support').click(function() {
+        var userId = $(this).data('user-id');
+        var username = $(this).data('username');
+        var email = $(this).data('email');
+        
+        $('#edit_username').val(username);
+        $('#edit_email').val(email);
+        $('#editSupportForm').attr('action', '/support-management/' + userId + '/edit/');
+        
+        // Загрузка категорий пользователя через AJAX
+        $.get('/support-management/' + userId + '/categories/', function(data) {
+            $('#edit_categories').val(data.categories);
+        });
+    });
+    
+    // Обработка удаления
+    $('.delete-support').click(function() {
+        if (confirm('Вы уверены, что хотите удалить специалиста ' + $(this).data('username') + '?')) {
+            var userId = $(this).data('user-id');
+            $.ajax({
+                url: '/support-management/' + userId + '/delete/',
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function() {
+                    location.reload();
+                },
+                error: function() {
+                    alert('Произошла ошибка при удалении специалиста');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

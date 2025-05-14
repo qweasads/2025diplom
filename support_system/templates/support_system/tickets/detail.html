@@ -4,101 +4,83 @@
 
 {% block content %}
 <div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'user_tickets' %}">Заявки</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Заявка #{{ ticket.id }}</li>
+        </ol>
+    </nav>
     <div class="row">
-        <div class="col-md-8">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Заявка #{{ ticket.id }}</h2>
-                {% if user.is_support or user.is_support_specialist %}
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-toggle="dropdown">
-                            Статус: {{ ticket.get_status_display }}
-                        </button>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item change-status" href="#" data-status="open">Открыта</a>
-                            <a class="dropdown-item change-status" href="#" data-status="in_progress">В работе</a>
-                            <a class="dropdown-item change-status" href="#" data-status="closed">Закрыта</a>
-                        </div>
-                    </div>
-                {% else %}
-                    <span class="badge badge-{% if ticket.status == 'open' %}primary{% elif ticket.status == 'in_progress' %}warning{% else %}success{% endif %}">
-                        {{ ticket.get_status_display }}
-                    </span>
-                {% endif %}
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">{{ ticket.title }}</h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">{{ ticket.description }}</p>
-                    <div class="text-muted">
-                        <small>
-                            Создана: {{ ticket.created_at|date:"d.m.Y H:i" }}<br>
-                            Категория: {{ ticket.category.name }}<br>
-                            {% if ticket.support_user %}
-                                Специалист: {{ ticket.support_user.get_full_name|default:ticket.support_user.username }}
-                            {% endif %}
-                        </small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="messages-container mb-4">
-                {% for message in ticket.messages.all %}
-                    <div class="card mb-3 {% if message.user == ticket.user %}border-primary{% else %}border-success{% endif %}">
-                        <div class="card-header">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <strong>{{ message.user.get_full_name|default:message.user.username }}</strong>
-                                <small class="text-muted">{{ message.created_at|date:"d.m.Y H:i" }}</small>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">{{ message.content }}</p>
-                            {% if message.file %}
-                                <a href="{{ message.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                    <i class="fas fa-download"></i> Скачать файл
-                                </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-
-            {% if ticket.status != 'closed' %}
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Ответить</h5>
-                        <form method="post" action="{% url 'reply_ticket' ticket.id %}" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            <div class="form-group">
-                                <textarea name="text" class="form-control" rows="3" required></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Прикрепить файл:</label>
-                                <input type="file" name="file" class="form-control-file">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Отправить</button>
-                        </form>
-                    </div>
+        <div class="col-lg-8">
+            {% if ticket.status == 'closed' %}
+                <div class="alert alert-secondary mb-3" style="font-size:1.1em;">
+                    <i class="fas fa-info-circle me-2"></i>Заявка закрыта {{ ticket.updated_at|date:"d.m.Y H:i" }}
                 </div>
             {% endif %}
-        </div>
-
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Информация</h5>
-                </div>
+            <div class="mb-3">
+                {% for message in ticket.messages.all %}
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <img src="https://ui-avatars.com/api/?name={{ message.user.get_full_name|default:message.user.username }}&background=deeefc&color=2c3e50&size=48" class="rounded-circle" width="48" height="48" alt="avatar">
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <strong class="me-2">{{ message.user.get_full_name|default:message.user.username }}</strong>
+                                <span class="text-muted small">{{ message.created_at|date:"d.m.Y H:i" }}</span>
+                            </div>
+                            <div class="p-3 rounded" {% if message.user == ticket.user %}style="background:#fafbfc; border:1.5px solid #d3d6db;"{% else %}style="background:#e3effc;"{% endif %}>
+                                {{ message.content|linebreaks }}
+                                {% if message.files.all %}
+                                    <div class="mt-2">
+                                        {% for file in message.files.all %}
+                                            <a href="{{ file.file.url }}" class="btn btn-sm btn-outline-primary me-2" download>
+                                                <i class="fas fa-paperclip"></i> {{ file.filename }}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="alert alert-info">Нет сообщений</div>
+                {% endfor %}
+            </div>
+            {% if ticket.status != 'closed' %}
+            <div class="card mb-3">
                 <div class="card-body">
-                    <p><strong>Автор:</strong> {{ ticket.user.get_full_name|default:ticket.user.username }}</p>
-                    <p><strong>Создана:</strong> {{ ticket.created_at|date:"d.m.Y H:i" }}</p>
-                    <p><strong>Категория:</strong> {{ ticket.category.name }}</p>
-                    {% if ticket.support_user %}
-                        <p><strong>Специалист:</strong> {{ ticket.support_user.get_full_name|default:ticket.support_user.username }}</p>
-                    {% endif %}
-                    <p><strong>Статус:</strong> {{ ticket.get_status_display }}</p>
+                    <h5 class="card-title">Ответить</h5>
+                    <form method="post" action="{% url 'reply_ticket' ticket.id %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group mb-2">
+                            <textarea name="content" class="form-control" rows="3" placeholder="Введите сообщение..."></textarea>
+                        </div>
+                        <div class="form-group mb-2">
+                            <label>Прикрепить файл:</label>
+                            <input type="file" name="files" id="ticket-detail-files" class="form-control-file d-none" multiple>
+                            <label for="ticket-detail-files" id="customFileLabelDetail" class="btn btn-outline-secondary">Выбрать файлы</label>
+                            <span id="file-chosen-detail" class="ms-2 text-muted"></span>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Отправить</button>
+                    </form>
                 </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-lg-4">
+            <div class="card p-3 mb-3" style="background: #e9f0fa;">
+                <div class="mb-2">
+                    <span class="badge bg-secondary">{% if ticket.status == 'open' %}Открыта{% elif ticket.status == 'in-progress' %}В работе{% else %}Закрыта{% endif %}</span>
+                </div>
+                <div class="mb-2"><strong>Создана</strong><br>{{ ticket.created_at|date:"d.m.Y H:i" }}</div>
+                {% if ticket.support_user %}
+                    <div class="mb-2"><strong>Специалист</strong><br>{{ ticket.support_user.get_full_name|default:ticket.support_user.username }}</div>
+                {% endif %}
+                <hr>
+                <div class="mb-2"><strong>Ник</strong><br>{{ ticket.user.username }}</div>
+                <div class="mb-2"><strong>Категория</strong><br>{{ ticket.category.name }}</div>
+                <div class="mb-2"><strong>Тема заявки</strong><br>{{ ticket.title }}</div>
             </div>
         </div>
     </div>
@@ -106,6 +88,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
 $(document).ready(function() {
     $('.change-status').click(function(e) {
@@ -125,10 +108,26 @@ $(document).ready(function() {
                 location.reload();
             },
             error: function(xhr) {
-                alert(xhr.responseJSON.error || 'Произошла ошибка при изменении статуса');
+                let msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Произошла ошибка при изменении статуса';
+                alert('Ошибка: ' + msg + '\nСтатус ответа: ' + xhr.status);
             }
         });
     });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('ticket-detail-files');
+    const label = document.getElementById('customFileLabelDetail');
+    const fileChosen = document.getElementById('file-chosen-detail');
+    if (input) {
+        input.addEventListener('change', function() {
+            if (input.files.length > 0) {
+                fileChosen.textContent = input.files.length === 1 ? input.files[0].name : input.files.length + ' файла(ов) выбрано';
+            } else {
+                fileChosen.textContent = '';
+            }
+        });
+    }
 });
 </script>
 {% endblock %} 

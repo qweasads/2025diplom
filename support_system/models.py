@@ -1,8 +1,10 @@
+import os
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-import os
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 class User(AbstractUser):
     """Расширенная модель пользователя"""
@@ -15,7 +17,7 @@ class User(AbstractUser):
         verbose_name_plural = _('Пользователи')
     
     def __str__(self):
-        return self.get_full_name() or self.username
+        return self.username
 
 
 class Category(models.Model):
@@ -61,21 +63,22 @@ class Ticket(models.Model):
     
     def __str__(self):
         return f"#{self.id} - {self.title}"
-    
-    def get_status_display(self):
-        return dict(self.STATUS_CHOICES).get(self.status)
 
 
 class TicketMessage(models.Model):
-    """Сообщение в заявке"""
-    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='messages')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    content = models.TextField()
-    file = models.FileField(upload_to='ticket_files/', null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    """Модель для сообщений в заявке"""
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='messages', verbose_name=_('Заявка'))
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_('Пользователь'))
+    content = models.TextField(verbose_name=_('Сообщение'), blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата создания'))
+    
     class Meta:
+        verbose_name = _('Сообщение')
+        verbose_name_plural = _('Сообщения')
         ordering = ['created_at']
+    
+    def __str__(self):
+        return f"Сообщение от {self.user} в заявке #{self.ticket.id}"
 
 
 def ticket_file_path(instance, filename):
@@ -129,23 +132,75 @@ class MessageFile(models.Model):
 
 
 class Notification(models.Model):
-    """Уведомление"""
-    TYPES = (
-        ('new', 'Новая заявка'),
-        ('reply', 'Новый ответ'),
-        ('status', 'Изменение статуса'),
-        ('assign', 'Назначение специалиста'),
+    """Модель для уведомлений"""
+    TYPE_CHOICES = (
+        ('ticket_created', _('Создана новая заявка')),
+        ('ticket_updated', _('Заявка обновлена')),
+        ('ticket_assigned', _('Заявка назначена')),
+        ('message_created', _('Новое сообщение')),
     )
     
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
-    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, null=True)
-    type = models.CharField(max_length=10, choices=TYPES)
-    text = models.CharField(max_length=255)
-    is_read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications', verbose_name=_('Пользователь'))
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, null=True, blank=True, verbose_name=_('Заявка'))
+    message = models.ForeignKey(TicketMessage, on_delete=models.CASCADE, null=True, blank=True, verbose_name=_('Сообщение'))
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name=_('Тип'))
+    text = models.CharField(max_length=255, verbose_name=_('Текст'))
+    is_read = models.BooleanField(default=False, verbose_name=_('Прочитано'))
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата создания'))
+    
     class Meta:
+        verbose_name = _('Уведомление')
+        verbose_name_plural = _('Уведомления')
         ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Уведомление для {self.user}: {self.text}"
+
+
+class File(models.Model):
+    """Универсальная модель для файлов"""
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    file = models.FileField(upload_to='files/', verbose_name=_('Файл'))
+    filename = models.CharField(max_length=255, verbose_name=_('Имя файла'))
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата загрузки'))
+    
+    class Meta:
+        verbose_name = _('Файл')
+        verbose_name_plural = _('Файлы')
+    
+    def __str__(self):
+        return self.filename
+    
+    def save(self, *args, **kwargs):
+        if not self.filename:
+            self.filename = os.path.basename(self.file.name)
+        super().save(*args, **kwargs)
+
+
+class Content(models.Model):
+    """Универсальная модель для контента (FAQ и База знаний)"""
+    CONTENT_TYPES = (
+        ('faq', _('FAQ')),
+        ('kb', _('База знаний')),
+    )
+    
+    type = models.CharField(max_length=10, choices=CONTENT_TYPES, verbose_name=_('Тип контента'))
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='contents', verbose_name=_('Раздел'))
+    title = models.CharField(max_length=255, verbose_name=_('Заголовок'))
+    content = models.TextField(verbose_name=_('Содержание'))
+    order = models.PositiveIntegerField(default=0, verbose_name=_('Порядок'))
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата создания'))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Дата обновления'))
+    
+    class Meta:
+        verbose_name = _('Контент')
+        verbose_name_plural = _('Контент')
+        ordering = ['category', 'order', '-updated_at']
+    
+    def __str__(self):
+        return self.title
 
 
 class FAQ(models.Model):

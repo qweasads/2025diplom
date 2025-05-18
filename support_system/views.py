@@ -174,10 +174,14 @@ def reply_ticket(request, ticket_id):
         return redirect('ticket_detail', ticket_id=ticket.id)
     
     if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        if not content:
+            messages.error(request, 'Нельзя отправить пустое сообщение.')
+            return redirect('ticket_detail', ticket_id=ticket.id)
         message = TicketMessage(
             ticket=ticket,
             user=request.user,
-            content=request.POST.get('content', '')
+            content=content
         )
         message.save()
         

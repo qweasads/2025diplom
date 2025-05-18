@@ -71,7 +71,16 @@
         <div class="col-lg-4">
             <div class="card p-3 mb-3" style="background: #e9f0fa;">
                 <div class="mb-2">
-                    <span class="badge bg-secondary">{% if ticket.status == 'open' %}Открыта{% elif ticket.status == 'in-progress' %}В работе{% else %}Закрыта{% endif %}</span>
+                    {% if user.is_support or user.is_admin %}
+                        <label for="status-select"><strong>Статус</strong></label><br>
+                        <select id="status-select" class="form-select form-select-sm w-auto d-inline-block" style="min-width:120px;" data-ticket-id="{{ ticket.id }}">
+                            <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Открыта</option>
+                            <option value="in-progress" {% if ticket.status == 'in-progress' %}selected{% endif %}>В работе</option>
+                            <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Закрыта</option>
+                        </select>
+                    {% else %}
+                        <span class="badge bg-secondary">{% if ticket.status == 'open' %}Открыта{% elif ticket.status == 'in-progress' %}В работе{% else %}Закрыта{% endif %}</span>
+                    {% endif %}
                 </div>
                 <div class="mb-2"><strong>Создана</strong><br>{{ ticket.created_at|date:"d.m.Y H:i" }}</div>
                 {% if ticket.support_user %}
@@ -95,6 +104,27 @@ $(document).ready(function() {
         e.preventDefault();
         var status = $(this).data('status');
         
+        $.ajax({
+            url: '{% url "update_ticket_status" ticket.id %}',
+            method: 'POST',
+            data: {
+                status: status
+            },
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                location.reload();
+            },
+            error: function(xhr) {
+                let msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Произошла ошибка при изменении статуса';
+                alert('Ошибка: ' + msg + '\nСтатус ответа: ' + xhr.status);
+            }
+        });
+    });
+
+    $('#status-select').change(function() {
+        var status = $(this).val();
         $.ajax({
             url: '{% url "update_ticket_status" ticket.id %}',
             method: 'POST',

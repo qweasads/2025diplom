@@ -386,16 +386,6 @@
                     <div class="col-md-6">
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">Среднее время ответа</h3>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="responseTimeChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
                                 <h3 class="card-title">Активность специалистов</h3>
                             </div>
                             <div class="card-body">
@@ -471,24 +461,17 @@
             }]
         };
 
-        const responseTimeData = {
-            labels: [{% for support in support_users %}'{{ support.get_full_name }}',{% endfor %}],
-            datasets: [{
-                label: 'Среднее время ответа (часы)',
-                data: [{% for support in support_users %}{{ support.avg_response_time }},{% endfor %}],
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        };
-
         const supportActivityData = {
             labels: [{% for support in support_users %}'{{ support.get_full_name }}',{% endfor %}],
             datasets: [{
                 label: 'Количество ответов',
                 data: [{% for support in support_users %}{{ support.responses_count }},{% endfor %}],
-                backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                borderColor: 'rgba(153, 102, 255, 1)',
+                backgroundColor: [
+                    'rgba(153, 102, 255, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(153, 102, 255, 1)'
+                ],
                 borderWidth: 1
             }]
         };
@@ -537,25 +520,6 @@
                     title: {
                         display: true,
                         text: 'Динамика новых заявок'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-
-        new Chart(document.getElementById('responseTimeChart'), {
-            type: 'bar',
-            data: responseTimeData,
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Среднее время ответа специалистов (часы)'
                     }
                 },
                 scales: {

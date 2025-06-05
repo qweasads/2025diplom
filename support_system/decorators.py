@@ -4,7 +4,6 @@ from functools import wraps
 
 
 def admin_required(view_func):
-    """Декоратор для проверки, является ли пользователь администратором"""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_admin:
@@ -15,7 +14,6 @@ def admin_required(view_func):
 
 
 def support_required(view_func):
-    """Декоратор для проверки, является ли пользователь специалистом поддержки"""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not (request.user.is_support or request.user.is_admin):

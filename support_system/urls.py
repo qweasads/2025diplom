@@ -21,6 +21,7 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/reply/', views.reply_ticket, name='reply_ticket'),
     path('tickets/<int:ticket_id>/status/', views.update_ticket_status, name='update_ticket_status'),
     path('tickets/<int:ticket_id>/take/', views.take_ticket, name='take_ticket'),
+    path('tickets/<int:ticket_id>/rate/', views.rate_specialist, name='rate_specialist'),
     
     # Специалисты поддержки
     path('support/', views.support_tickets, name='support_tickets'),

@@ -1,0 +1,70 @@
+{% extends 'support_system/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Статистика системы</h2>
+    <div class="row mt-4">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Всего заявок: <b>{{ total_tickets }}</b></li>
+                        <li class="list-group-item">Открытых: <b>{{ open_tickets }}</b></li>
+                        <li class="list-group-item">В работе: <b>{{ inprogress_tickets }}</b></li>
+                        <li class="list-group-item">Закрытых: <b>{{ closed_tickets }}</b></li>
+                        <li class="list-group-item">Пользователей: <b>{{ users_count }}</b></li>
+                        <li class="list-group-item">Сотрудников поддержки: <b>{{ support_count }}</b></li>
+                        <li class="list-group-item">Категорий: <b>{{ categories_count }}</b></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7 d-flex align-items-center justify-content-center">
+            <div class="card shadow-sm w-100" style="min-height: 350px;">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                    <button id="showChartBtn" class="btn btn-primary mb-3">Сформировать отчёт</button>
+                    <div id="chartBlock" style="display:none;">
+                        <h5 class="text-center">Распределение заявок по статусам</h5>
+                        <canvas id="statusChart" width="250" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let chart = null;
+    document.getElementById('showChartBtn').addEventListener('click', function() {
+        document.getElementById('chartBlock').style.display = 'block';
+        if (chart) chart.destroy();
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Открытые', 'В работе', 'Закрытые'],
+                datasets: [{
+                    data: [{{ open_tickets }}, {{ inprogress_tickets }}, {{ closed_tickets }}],
+                    backgroundColor: ['#ffc107', '#17a2b8', '#28a745']
+                }]
+            },
+            options: {
+                responsive: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    title: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -3,55 +3,37 @@
 {% block title %}Главная - Система поддержки{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2 text-center">
-        <h1 class="display-4 mb-4">Добро пожаловать в систему поддержки</h1>
-        <p class="lead mb-4">Мы здесь, чтобы помочь вам решить любые возникающие вопросы</p>
-        
+<div class="main-cards-outer">
+    <h1 class="main-welcome-title">Добро пожаловать в систему поддержки</h1>
+    <p class="main-welcome-subtitle">Мы здесь, чтобы помочь вам решить любые возникающие вопросы</p>
+    <div class="main-welcome-buttons">
         {% if user.is_authenticated %}
-            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
-                <a href="{% url 'create_ticket' %}" class="btn btn-primary btn-lg px-4 gap-3">Создать заявку</a>
-                <a href="{% url 'user_tickets' %}" class="btn btn-outline-secondary btn-lg px-4">Мои заявки</a>
-            </div>
+            <a href="{% url 'create_ticket' %}" class="btn btn-primary">Создать заявку</a>
+            <a href="{% url 'user_tickets' %}" class="btn btn-outline-secondary">Мои заявки</a>
         {% else %}
-            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
-                <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4 gap-3">Войти</a>
-                <a href="{% url 'register' %}" class="btn btn-outline-secondary btn-lg px-4">Зарегистрироваться</a>
-            </div>
+            <a href="{% url 'login' %}" class="btn btn-primary">Войти</a>
+            <a href="{% url 'register' %}" class="btn btn-outline-secondary">Зарегистрироваться</a>
         {% endif %}
     </div>
-</div>
-
-<div class="row mt-5">
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <h3 class="card-title">База знаний</h3>
-                <p class="card-text">Найдите ответы на часто задаваемые вопросы в нашей базе знаний.</p>
-                <a href="{% url 'knowledge_base' %}" class="btn btn-outline-primary">Перейти к базе знаний</a>
-            </div>
+    <div class="main-cards-row">
+        <div class="main-card">
+            <h3 class="main-card-title">База знаний</h3>
+            <p class="main-card-text">Найдите ответы на часто задаваемые вопросы в нашей базе знаний.</p>
+            <a href="{% url 'knowledge_base' %}" class="btn btn-outline-primary">Перейти к базе знаний</a>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <h3 class="card-title">FAQ</h3>
-                <p class="card-text">Ознакомьтесь с часто задаваемыми вопросами и ответами на них.</p>
-                <a href="{% url 'faq' %}" class="btn btn-outline-primary">Перейти к FAQ</a>
-            </div>
+        <div class="main-card">
+            <h3 class="main-card-title">FAQ</h3>
+            <p class="main-card-text">Ознакомьтесь с часто задаваемыми вопросами и ответами на них.</p>
+            <a href="{% url 'faq' %}" class="btn btn-outline-primary">Перейти к FAQ</a>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <h3 class="card-title">Техническая поддержка</h3>
-                <p class="card-text">Не нашли ответ? Создайте заявку в техническую поддержку.</p>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'create_ticket' %}" class="btn btn-outline-primary">Создать заявку</a>
-                {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-outline-primary">Войти для создания заявки</a>
-                {% endif %}
-            </div>
+        <div class="main-card">
+            <h3 class="main-card-title">Техническая поддержка</h3>
+            <p class="main-card-text">Не нашли ответ? Создайте заявку в техническую поддержку.</p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'create_ticket' %}" class="btn btn-outline-primary">Создать заявку</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-primary">Войти для создания заявки</a>
+            {% endif %}
         </div>
     </div>
 </div>

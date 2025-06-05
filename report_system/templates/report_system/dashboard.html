@@ -1,0 +1,176 @@
+{% extends 'support_system/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Панель отчетов</h2>
+    
+    <!-- Статистика системы -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Статистика системы</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Всего заявок: <b>{{ total_tickets }}</b></li>
+                        <li class="list-group-item">Открытых: <b>{{ open_tickets }}</b></li>
+                        <li class="list-group-item">В работе: <b>{{ inprogress_tickets }}</b></li>
+                        <li class="list-group-item">Закрытых: <b>{{ closed_tickets }}</b></li>
+                        <li class="list-group-item">Пользователей: <b>{{ users_count }}</b></li>
+                        <li class="list-group-item">Сотрудников поддержки: <b>{{ support_count }}</b></li>
+                        <li class="list-group-item">Категорий: <b>{{ categories_count }}</b></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 d-flex align-items-center justify-content-center">
+            <button class="btn btn-primary mt-3" style="min-width:220px;" onclick="generateReport()">Сформировать отчёт</button>
+        </div>
+    </div>
+
+    <!-- Графики -->
+    <div id="charts-row" class="row mt-4" style="display: none;">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Распределение заявок по статусам</h5>
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Заявки по категориям</h5>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Аналитика по оценкам специалистов -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Средняя оценка работы специалистов:
+                {% if avg_rating %}{{ avg_rating|floatformat:1 }} / 5{% else %}Нет оценок{% endif %}
+            </h5>
+            <p>Всего оценок: {{ ratings_count }}</p>
+            {% if top_specialists %}
+                <h6>Топ-5 специалистов:</h6>
+                <ul>
+                    {% for specialist in top_specialists %}
+                        <li>
+                            {{ specialist.get_full_name|default:specialist.username }} —
+                            {{ specialist.avg_score|floatformat:1 }} / 5 ({{ specialist.ratings_count }} оценок)
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Рейтинг специалистов</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Специалист</th>
+                            <th>Средняя оценка</th>
+                            <th>Обработано заявок</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for specialist in specialists_rating %}
+                        <tr>
+                            <td>{{ specialist.get_full_name|default:specialist.username }}</td>
+                            <td>{% if specialist.avg_score %}{{ specialist.avg_score|floatformat:2 }}{% else %}—{% endif %}</td>
+                            <td>{{ specialist.tickets_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let statusChartInstance = null;
+let categoryChartInstance = null;
+
+const STATUS_LABELS_RU = {
+    'open': 'Открытые',
+    'in_progress': 'В работе',
+    'in-progress': 'В работе',
+    'closed': 'Закрытые',
+};
+
+function generateReport() {
+    fetch('/reports/generate/tickets/')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('charts-row').style.display = 'flex';
+            updateCharts(data);
+        });
+}
+
+function updateCharts(data) {
+    // Удаляем старые графики, если есть
+    if (statusChartInstance) { statusChartInstance.destroy(); }
+    if (categoryChartInstance) { categoryChartInstance.destroy(); }
+
+    // --- Объединяем статусы "В работе" ---
+    let statusCounts = {
+        'Открытые': 0,
+        'В работе': 0,
+        'Закрытые': 0
+    };
+    if (data.by_status) {
+        data.by_status.forEach(item => {
+            if (item.status === 'open') statusCounts['Открытые'] += item.count;
+            else if (item.status === 'closed') statusCounts['Закрытые'] += item.count;
+            else if (item.status === 'in_progress' || item.status === 'in-progress') statusCounts['В работе'] += item.count;
+        });
+        const ruLabels = Object.keys(statusCounts);
+        const ruData = Object.values(statusCounts);
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        statusChartInstance = new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: ruLabels,
+                datasets: [{
+                    data: ruData,
+                    backgroundColor: ['#ffc107', '#17a2b8', '#28a745']
+                }]
+            }
+        });
+    }
+    
+    if (data.by_category) {
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        categoryChartInstance = new Chart(categoryCtx, {
+            type: 'bar',
+            data: {
+                labels: data.by_category.map(item => item.name || item.category__name),
+                datasets: [{
+                    label: 'Количество заявок',
+                    data: data.by_category.map(item => item.count),
+                    backgroundColor: '#007bff'
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
+{% endblock %} 

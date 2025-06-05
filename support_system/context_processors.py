@@ -1,5 +1,5 @@
 def notifications_count(request):
-    """Контекстный процессор для отображения количества непрочитанных уведомлений"""
+    # Отображение непрочитанных уведомлений
     if request.user.is_authenticated:
         from .models import Notification
         count = Notification.objects.filter(user=request.user, is_read=False).count()

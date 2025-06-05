@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Avg, Max, Subquery, OuterRef, F
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -14,7 +14,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils import timezone
 from datetime import timedelta
-from .models import User, Category, Ticket, TicketMessage, File, Content, Notification, MessageFile, FAQ, KnowledgeBase
+from .models import User, Category, Ticket, TicketMessage, File, Content, Notification, MessageFile, FAQ, KnowledgeBase, SupportRating
 from .forms import (
     UserRegistrationForm, 
     UserLoginForm, 
@@ -25,7 +25,8 @@ from .forms import (
     TicketMessageForm, 
     ContentForm,
     FAQForm,
-    KnowledgeBaseForm
+    KnowledgeBaseForm,
+    SupportRatingForm
 )
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
@@ -77,9 +78,25 @@ def dashboard(request):
         support_tickets = Ticket.objects.filter(support_user=request.user, status='open').order_by('-created_at')[:5]
     else:
         support_tickets = None
+    avg_rating = SupportRating.objects.aggregate(avg=Avg('score'))['avg']
+    ratings_count = SupportRating.objects.count()
+    top_specialists = User.objects.filter(
+        specialist_ratings__isnull=False
+    ).annotate(
+        avg_score=Avg('specialist_ratings__score'),
+        ratings_count=Count('specialist_ratings')
+    ).order_by('-avg_score')[:5]
+    specialists_rating = User.objects.filter(is_support=True).annotate(
+        avg_score=Avg('specialist_ratings__score'),
+        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed'))
+    ).order_by('-avg_score', '-tickets_count')[:10]
     return render(request, 'support_system/dashboard.html', {
         'user_tickets': user_tickets,
-        'support_tickets': support_tickets
+        'support_tickets': support_tickets,
+        'avg_rating': avg_rating,
+        'ratings_count': ratings_count,
+        'top_specialists': top_specialists,
+        'specialists_rating': specialists_rating,
     })
 
 @login_required
@@ -248,51 +265,69 @@ def update_ticket_status(request, ticket_id):
     })
 
 @login_required
-def support_tickets(request, filter=None):
-    """Список заявок для специалиста поддержки"""
-    if not request.user.is_support and not request.user.is_admin:
-        messages.error(request, 'У вас нет доступа к этой странице')
-        return redirect('dashboard')
-    
-    # Базовый QuerySet для заявок
-    tickets = Ticket.objects.all()
-    
-    if filter == 'new':
-        # Новые заявки (без назначенного специалиста) из категорий специалиста
-        tickets = tickets.filter(
-            Q(category__support_users=request.user) |  # Заявки из категорий специалиста
-            Q(support_user=request.user)  # Или уже назначенные специалисту
+def support_tickets(request):
+    """Список заявок для специалиста поддержки и администратора"""
+    user = request.user
+    filter_type = request.GET.get('filter')
+
+    if user.is_admin:
+        # Админ видит все заявки
+        tickets_qs = Ticket.objects.all().order_by('-created_at')
+        # Новые заявки: не назначены
+        new_tickets = Ticket.objects.filter(support_user__isnull=True, status='open')
+        # Ожидают ответа: заявки в работе, где последнее сообщение не от саппорта
+        last_msg_user = TicketMessage.objects.filter(ticket=OuterRef('pk')).order_by('-created_at').values('user')[:1]
+        awaiting_tickets = Ticket.objects.filter(status='in-progress').annotate(
+            last_msg_user=Subquery(last_msg_user)
         ).filter(
-            Q(status='open') |  # Открытые заявки
-            Q(status='in_progress', support_user=request.user)  # Или в работе у текущего специалиста
-        ).distinct()
-    elif filter == 'awaiting':
-        # Заявки, ожидающие ответа более 24 часов
-        day_ago = timezone.now() - timedelta(days=1)
-        tickets = tickets.filter(
-            support_user=request.user,
-            status='in_progress'
-        ).filter(
-            Q(messages__isnull=True) |  # Нет сообщений
-            Q(messages__created_at__lt=day_ago)  # Последнее сообщение старше 24 часов
-        ).distinct()
+            last_msg_user__isnull=False
+        ).exclude(
+            last_msg_user=F('support_user')
+        )
     else:
-        # Все заявки, доступные специалисту
-        if request.user.is_admin:
-            # Администратор видит все заявки
-            tickets = tickets.all()
-        else:
-            # Специалист поддержки видит только свои заявки
-            tickets = tickets.filter(
-                Q(category__support_users=request.user) |  # Заявки из категорий специалиста
-                Q(support_user=request.user)  # Или уже назначенные специалисту
-            ).distinct()
-    
-    tickets = tickets.order_by('-created_at')
-    
+        # Саппорт видит только свои и по категориям
+        new_tickets = Ticket.objects.filter(
+            category__support_users=user,
+            support_user__isnull=True,
+            status='open'
+        ).distinct()
+        my_tickets = Ticket.objects.filter(support_user=user)
+        last_msg_user = TicketMessage.objects.filter(ticket=OuterRef('pk')).order_by('-created_at').values('user')[:1]
+        awaiting_tickets = Ticket.objects.filter(
+            support_user=user,
+            status='in-progress'
+        ).annotate(
+            last_msg_user=Subquery(last_msg_user)
+        ).filter(
+            last_msg_user__isnull=False
+        ).exclude(
+            last_msg_user=user.id
+        )
+        # Все заявки: новые + мои
+        tickets_qs = Ticket.objects.filter(
+            Q(support_user=user) | Q(category__support_users=user, support_user__isnull=True, status='open')
+        ).distinct().order_by('-created_at')
+
+    # Фильтрация по кнопкам
+    if filter_type == 'new':
+        tickets = new_tickets.order_by('-created_at')
+    elif filter_type == 'awaiting':
+        tickets = awaiting_tickets.order_by('-created_at')
+    else:
+        tickets = tickets_qs
+
+    # Пагинация
+    paginator = Paginator(tickets, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'support_system/support/tickets.html', {
-        'tickets': tickets,
-        'filter': filter
+        'tickets': page_obj,
+        'filter': filter_type,
+        'new_tickets_count': new_tickets.count(),
+        'awaiting_tickets_count': awaiting_tickets.count(),
+        'is_paginated': page_obj.has_other_pages(),
+        'page_obj': page_obj,
     })
 
 @login_required
@@ -302,15 +337,6 @@ def admin_panel(request):
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('dashboard')
     return render(request, 'support_system/admin/panel.html')
-
-@login_required
-def admin_tickets(request):
-    """Управление заявками в админ-панели"""
-    if not request.user.is_admin:
-        messages.error(request, 'У вас нет доступа к этой странице')
-        return redirect('dashboard')
-    tickets = Ticket.objects.all().order_by('-created_at')
-    return render(request, 'support_system/admin/tickets.html', {'tickets': tickets})
 
 @login_required
 def assign_ticket(request, ticket_id):
@@ -697,3 +723,44 @@ def mark_all_notifications_read(request):
         request.user.notifications.update(is_read=True)
         messages.success(request, 'Все уведомления отмечены как прочитанные')
     return redirect('notifications')
+
+@login_required
+def rate_specialist(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id, user=request.user, status='closed')
+    if hasattr(ticket, 'rating'):
+        return render(request, 'support_system/tickets/already_rated.html', {'ticket': ticket})
+    if request.method == 'POST':
+        form = SupportRatingForm(request.POST)
+        if form.is_valid():
+            rating = form.save(commit=False)
+            rating.ticket = ticket
+            rating.specialist = ticket.support_user
+            rating.user = request.user
+            rating.save()
+            return render(request, 'support_system/tickets/thanks_for_rating.html', {'ticket': ticket})
+    else:
+        form = SupportRatingForm()
+    return render(request, 'support_system/tickets/rate_specialist.html', {'form': form, 'ticket': ticket})
+
+# --- Аналитика по оценкам в dashboard ---
+def reports_dashboard(request):
+    # ... существующая логика ...
+    avg_rating = SupportRating.objects.aggregate(avg=Avg('score'))['avg']
+    ratings_count = SupportRating.objects.count()
+    top_specialists = User.objects.filter(
+        specialist_ratings__isnull=False
+    ).annotate(
+        avg_score=Avg('specialist_ratings__score'),
+        ratings_count=Count('specialist_ratings')
+    ).order_by('-avg_score')[:5]
+    specialists_rating = User.objects.filter(is_support=True).annotate(
+        avg_score=Avg('specialist_ratings__score'),
+        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed'))
+    ).order_by('-avg_score', '-tickets_count')[:10]
+    context = {
+        'avg_rating': avg_rating,
+        'ratings_count': ratings_count,
+        'top_specialists': top_specialists,
+        'specialists_rating': specialists_rating,
+    }
+    return render(request, 'report_system/dashboard.html', context)

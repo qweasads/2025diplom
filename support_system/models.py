@@ -234,3 +234,20 @@ class KnowledgeBase(models.Model):
     
     def __str__(self):
         return self.title
+
+
+class SupportRating(models.Model):
+    ticket = models.OneToOneField('Ticket', on_delete=models.CASCADE, related_name='rating', verbose_name=_('Заявка'))
+    specialist = models.ForeignKey(User, on_delete=models.CASCADE, related_name='specialist_ratings', verbose_name=_('Специалист'))
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_ratings', verbose_name=_('Оценивший пользователь'))
+    score = models.PositiveSmallIntegerField(choices=[(i, f'{i} звёзд') for i in range(1, 6)], verbose_name=_('Оценка'))
+    comment = models.TextField(blank=True, verbose_name=_('Комментарий'))
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата оценки'))
+
+    class Meta:
+        verbose_name = _('Оценка специалиста')
+        verbose_name_plural = _('Оценки специалистов')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Оценка {self.score} для заявки #{self.ticket.id}'

@@ -1,0 +1,32 @@
+{% extends 'support_system/base.html' %}
+{% block title %}Оценка специалиста{% endblock %}
+{% block content %}
+<div class="container mt-4 d-flex justify-content-center">
+    <div class="card shadow-sm p-4" style="max-width: 420px; width:100%;">
+        <h4 class="mb-4 text-center">Оцените работу специалиста по заявке №{{ ticket.id }}</h4>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label mb-2" style="font-weight:600;">Оценка:</label>
+                <div class="d-flex flex-column align-items-center gap-2">
+                    {% for radio in form.score %}
+                        <label class="form-check-label w-100" style="font-size:1.2em; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            {{ radio.tag }}
+                            <span style="color:#f1c40f; font-size:1.5em;">
+                                {% for i in "12345"|make_list %}{% if forloop.parentloop.counter >= forloop.counter %}★{% endif %}{% endfor %}
+                            </span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Комментарий:</label>
+                <textarea name="comment" class="form-control" rows="3" placeholder="Оставьте комментарий (необязательно)"></textarea>
+            </div>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-success btn-lg">Отправить</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

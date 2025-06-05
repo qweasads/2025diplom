@@ -91,6 +91,18 @@
                 <div class="mb-2"><strong>Категория</strong><br>{{ ticket.category.name }}</div>
                 <div class="mb-2"><strong>Тема заявки</strong><br>{{ ticket.title }}</div>
             </div>
+            {% if request.user == ticket.user %}
+                <div id="rate-block" class="text-center mt-3">
+                    {% if ticket.status == 'closed' and not ticket.rating %}
+                        <a href="/tickets/{{ ticket.id }}/rate/" class="btn btn-outline-primary btn-lg">Оценить работу специалиста</a>
+                    {% elif ticket.rating %}
+                        <div class="alert alert-info mt-2 d-inline-block text-start" style="max-width:350px;">
+                            <strong>Ваша оценка:</strong> <span style="font-size:1.2em; color:#f1c40f;">{{ ticket.rating.score }} ★</span><br>
+                            {% if ticket.rating.comment %}<span class="text-muted">Комментарий:</span> {{ ticket.rating.comment }}{% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

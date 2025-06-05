@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Панель отчетов</h2>
+    
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Фильтры</h5>
+            <form id="reportFilters" class="row g-3">
+                <div class="col-md-4">
+                    <label for="startDate" class="form-label">Начальная дата</label>
+                    <input type="date" class="form-control" id="startDate" name="start_date">
+                </div>
+                <div class="col-md-4">
+                    <label for="endDate" class="form-label">Конечная дата</label>
+                    <input type="date" class="form-control" id="endDate" name="end_date">
+                </div>
+                <div class="col-md-4">
+                    <label for="category" class="form-label">Категория</label>
+                    <select class="form-select" id="category" name="category_id">
+                        <option value="">Все категории</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Применить фильтры</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Типы отчетов -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Отчет по заявкам</h5>
+                    <p class="card-text">Статистика по всем заявкам в системе</p>
+                    <button class="btn btn-primary" onclick="generateReport('tickets')">Сформировать</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Отчет по специалистам</h5>
+                    <p class="card-text">Эффективность работы специалистов поддержки</p>
+                    <button class="btn btn-primary" onclick="generateReport('support')">Сформировать</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Отчет по пользователям</h5>
+                    <p class="card-text">Активность и статистика пользователей</p>
+                    <button class="btn btn-primary" onclick="generateReport('users')">Сформировать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Графики -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Распределение заявок по статусам</h5>
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Заявки по категориям</h5>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function generateReport(type) {
+    const filters = new FormData(document.getElementById('reportFilters'));
+    const params = new URLSearchParams(filters);
+    
+    fetch(`/reports/generate/${type}/?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            updateCharts(data);
+        });
+}
+
+function updateCharts(data) {
+    // Обновление графиков на основе полученных данных
+    // Здесь будет код для обновления Chart.js графиков
+}
+
+// Инициализация графиков при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    generateReport('tickets');
+});
+</script>
+{% endblock %}
+{% endblock %} 

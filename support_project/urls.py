@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from support_system import views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -9,6 +9,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     path('', views.index, name='index'),
+    
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('register/', views.register_view, name='register'),
@@ -23,6 +24,7 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/', views.ticket_detail, name='ticket_detail'),
     path('tickets/<int:ticket_id>/reply/', views.reply_ticket, name='reply_ticket'),
     path('tickets/<int:ticket_id>/status/', views.update_ticket_status, name='update_ticket_status'),
+    path('tickets/<int:ticket_id>/rate/', views.rate_specialist, name='rate_specialist'),
     
     # Страницы специалистов поддержки
     path('support/', views.support_tickets, name='support_tickets'),
@@ -41,6 +43,9 @@ urlpatterns = [
     path('faq/', views.faq, name='faq'),
     path('knowledge-base/', views.knowledge_base, name='knowledge_base'),
     path('knowledge-base/<int:article_id>/', views.knowledge_base_article, name='knowledge_base_article'),
+    
+    # Отчеты
+    path('reports/', include('report_system.urls')),
 ]
 
 if settings.DEBUG:

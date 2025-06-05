@@ -47,10 +47,19 @@ $(document).ready(function() {
 {% block content %}
 <div class="container mt-4">
     <h2 class="mb-4">Заявки в поддержку</h2>
-    <div class="mb-3">
-        <a href="?" class="btn btn-outline-primary">Все заявки</a>
-        <a href="?filter=new" class="btn btn-primary">Новые заявки <span class="badge bg-light text-dark">{{ new_tickets_count }}</span></a>
-        <a href="?filter=awaiting" class="btn btn-outline-primary">Ожидают ответа</a>
+    <div class="d-flex align-items-center mb-3">
+        <div>
+            <a href="?" class="btn {% if not filter %}btn-primary{% else %}btn-outline-primary{% endif %}">Все заявки</a>
+            <a href="?filter=new" class="btn {% if filter == 'new' %}btn-primary{% else %}btn-outline-primary{% endif %}">Новые заявки <span class="badge bg-light text-dark">{{ new_tickets_count }}</span></a>
+            <a href="?filter=awaiting" class="btn {% if filter == 'awaiting' %}btn-primary{% else %}btn-outline-primary{% endif %}">Ожидают ответа <span class="badge bg-light text-dark">{{ awaiting_tickets_count }}</span></a>
+        </div>
+        {% if user.is_admin or user.is_support %}
+        <div class="ms-auto">
+            <a href="{% url 'reports_dashboard' %}" class="btn btn-success">
+                <i class="bi bi-bar-chart"></i> Отчёты
+            </a>
+        </div>
+        {% endif %}
     </div>
     <div class="table-responsive">
         <table class="table table-bordered align-middle">
@@ -73,14 +82,18 @@ $(document).ready(function() {
                     <td><span class="text-secondary">{% if ticket.status == 'open' %}Открыт{% elif ticket.status == 'in-progress' %}В работе{% else %}Закрыт{% endif %}</span></td>
                     <td>{{ ticket.created_at|date:"d.m.Y H:i" }}</td>
                     <td>
-                        {% if not ticket.support_user %}
-                            <button class="btn btn-sm btn-success take-ticket" data-ticket-id="{{ ticket.id }}">
-                                Принять в работу
-                            </button>
-                        {% elif ticket.support_user == request.user %}
-                            <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-primary">
-                                Ответить
-                            </a>
+                        {% if user.is_admin %}
+                            <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-primary">Посмотреть</a>
+                        {% else %}
+                            {% if not ticket.support_user %}
+                                <button class="btn btn-sm btn-success take-ticket" data-ticket-id="{{ ticket.id }}">
+                                    Принять в работу
+                                </button>
+                            {% elif ticket.support_user == request.user %}
+                                <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-primary">
+                                    Ответить
+                                </a>
+                            {% endif %}
                         {% endif %}
                     </td>
                 </tr>
@@ -88,9 +101,35 @@ $(document).ready(function() {
             </tbody>
         </table>
     </div>
+    {% if is_paginated %}
+    <nav>
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if filter %}filter={{ filter }}&{% endif %}page={{ page_obj.previous_page_number }}">Назад</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Назад</span></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="?{% if filter %}filter={{ filter }}&{% endif %}page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if filter %}filter={{ filter }}&{% endif %}page={{ page_obj.next_page_number }}">Вперёд</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Вперёд</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
 </div>
 
-<!-- Модальное окно для подтверждения -->
 <div class="modal fade" id="confirmTakeTicketModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">

@@ -3,6 +3,8 @@
 {% block title %}Заявка #{{ ticket.id }} | Система поддержки{% endblock %}
 
 {% block content %}
+<div style="color: red; font-size: 20px;">DEBUG: ticket_detail.html активен</div>
+
 <div class="ticket-detail">
     <div class="ticket-header">
         <h1 class="page-title">Заявка #{{ ticket.id }}: {{ ticket.title }}</h1>
@@ -110,5 +112,24 @@
             {% endif %}
         </div>
     </div>
+
+    <div style="color: red;">
+        DEBUG: request.user={{ request.user }} | ticket.user={{ ticket.user }}<br>
+        ticket.status={{ ticket.status }} | ticket.rating={{ ticket.rating }}
+    </div>
+
+    {% if request.user == ticket.user %}
+        <div style="color: green;">DEBUG: Пользователь совпадает с автором заявки</div>
+        {% if ticket.status == 'closed' and not ticket.rating %}
+            <a href="/tickets/{{ ticket.id }}/rate/" class="btn btn-outline-primary mt-2">Оценить работу специалиста</a>
+        {% elif ticket.rating %}
+            <div class="alert alert-info mt-2">
+                Ваша оценка: {{ ticket.rating.score }} звёзд
+                {% if ticket.rating.comment %}<br>Комментарий: {{ ticket.rating.comment }}{% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div style="color: orange;">DEBUG: Пользователь НЕ совпадает с автором заявки</div>
+    {% endif %}
 </div>
 {% endblock %}

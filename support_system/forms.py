@@ -1,12 +1,59 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
-from .models import User, Ticket, TicketMessage, Category, Content, FAQ, KnowledgeBase
+from .models import User, Ticket, TicketMessage, Category, Content, FAQ, KnowledgeBase, SupportRating
 from django.core.exceptions import ValidationError
 
 
 class UserRegistrationForm(UserCreationForm):
-    """Форма регистрации пользователя с минимальной валидацией пароля (только длина и совпадение)"""
+    # Форма регистрации пользователя
+    email = forms.EmailField(
+        label=_('Адрес электронной почты'),
+        error_messages={
+            'invalid': _('Введите корректный адрес электронной почты.'),
+            'required': _('Пожалуйста, укажите адрес электронной почты.'),
+        }
+    )
+    username = forms.CharField(
+        label=_('Имя пользователя'),
+        error_messages={
+            'required': _('Пожалуйста, укажите имя пользователя.'),
+            'unique': _('Пользователь с таким именем уже существует.'),
+        }
+    )
+    password1 = forms.CharField(
+        label=_('Пароль'),
+        widget=forms.PasswordInput,
+        error_messages={
+            'required': _('Пожалуйста, введите пароль.'),
+        }
+    )
+    password2 = forms.CharField(
+        label=_('Подтверждение пароля'),
+        widget=forms.PasswordInput,
+        error_messages={
+            'required': _('Пожалуйста, повторите пароль.'),
+        }
+    )
+    first_name = forms.CharField(
+        label=_('Имя'),
+        error_messages={
+            'required': _('Пожалуйста, укажите имя.'),
+        }
+    )
+    last_name = forms.CharField(
+        label=_('Фамилия'),
+        error_messages={
+            'required': _('Пожалуйста, укажите фамилию.'),
+        }
+    )
+    phone = forms.CharField(
+        label=_('Телефон'),
+        required=False,
+        error_messages={
+            'invalid': _('Введите корректный номер телефона.'),
+        }
+    )
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
         password2 = self.cleaned_data.get("password2")
@@ -26,20 +73,20 @@ class UserRegistrationForm(UserCreationForm):
 
 
 class UserLoginForm(forms.Form):
-    """Форма входа"""
+    # Форма входа
     username = forms.CharField(label='Имя пользователя')
     password = forms.CharField(label='Пароль', widget=forms.PasswordInput)
 
 
 class UserForm(forms.ModelForm):
-    """Форма для пользователя"""
+    # Форма для пользователя
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'is_active')
 
 
 class SupportUserForm(forms.ModelForm):
-    """Форма для специалиста поддержки"""
+    # Форма для специалиста поддержки
     categories = forms.ModelMultipleChoiceField(
         queryset=Category.objects.all(),
         widget=forms.CheckboxSelectMultiple,
@@ -129,4 +176,18 @@ class KnowledgeBaseForm(forms.ModelForm):
         fields = ['title', 'content', 'category']
         widgets = {
             'content': forms.Textarea(attrs={'rows': 10}),
+        }
+
+
+class SupportRatingForm(forms.ModelForm):
+    score = forms.ChoiceField(
+        choices=[(i, f'{i} звёзд') for i in range(1, 6)],
+        widget=forms.RadioSelect,
+        label='Оценка'
+    )
+    class Meta:
+        model = SupportRating
+        fields = ['score', 'comment']
+        widgets = {
+            'comment': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Комментарий (необязательно)'}),
         }

@@ -6,6 +6,70 @@
     <title>{% block title %}Система поддержки{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background: #ffcccc !important;
+        }
+        .main-welcome-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 1.2rem;
+            margin-bottom: 0.3rem;
+            text-align: center;
+        }
+        .main-welcome-subtitle {
+            font-size: 0.98rem;
+            text-align: center;
+            margin-bottom: 1.1rem;
+            color: #555;
+        }
+        .main-cards-outer {
+            max-width: 950px;
+            margin: 0 auto 1.2rem auto;
+            padding: 32px 24px;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(44,62,80,0.08);
+        }
+        .main-cards-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2.5rem;
+        }
+        .main-card {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(44,62,80,0.06);
+            min-height: 100px;
+            max-width: 300px;
+            min-width: 260px;
+            flex: 1 1 260px;
+            padding: 0.7rem 1.1rem 1.1rem 1.1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fafbfc;
+        }
+        .main-card-title {
+            font-size: 1.01rem;
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+        }
+        .main-card-text {
+            font-size: 0.89rem;
+            margin-bottom: 0.5rem;
+            color: #444;
+        }
+        .main-card .btn {
+            padding: 0.22rem 0.7rem;
+            font-size: 0.89rem;
+        }
+        @media (max-width: 900px) {
+            .main-cards-row { flex-direction: column !important; gap: 1rem; }
+            .main-card { min-height: 90px; max-width: 100%; }
+            .main-cards-outer { max-width: 98vw; padding: 16px 4px; }
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -50,6 +114,27 @@
                 </div>
             {% endif %}
             #}
+            <h1 class="main-welcome-title">Добро пожаловать в систему поддержки</h1>
+            <p class="main-welcome-subtitle">Мы здесь, чтобы помочь вам решить любые возникающие вопросы</p>
+            <div class="main-cards-outer">
+                <div class="main-cards-row">
+                    <div class="main-card">
+                        <h5 class="main-card-title">База знаний</h5>
+                        <p class="main-card-text">Найдите ответы на часто задаваемые вопросы в нашей базе знаний.</p>
+                        <a href="{% url 'knowledge_base' %}" class="btn btn-outline-primary btn-sm">Перейти к базе знаний</a>
+                    </div>
+                    <div class="main-card">
+                        <h5 class="main-card-title">FAQ</h5>
+                        <p class="main-card-text">Ознакомьтесь с часто задаваемыми вопросами и ответами на них.</p>
+                        <a href="{% url 'faq' %}" class="btn btn-outline-primary btn-sm">Перейти к FAQ</a>
+                    </div>
+                    <div class="main-card">
+                        <h5 class="main-card-title">Техническая поддержка</h5>
+                        <p class="main-card-text">Не нашли ответ? Создайте заявку в техническую поддержку.</p>
+                        <a href="{% url 'create_ticket' %}" class="btn btn-outline-primary btn-sm">Создать заявку</a>
+                    </div>
+                </div>
+            </div>
             {% block content %}{% endblock %}
         </div>
     </main>

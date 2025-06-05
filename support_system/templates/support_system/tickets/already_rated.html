@@ -1,0 +1,8 @@
+{% extends 'support_system/base.html' %}
+{% block title %}Оценка уже оставлена{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="alert alert-info">Вы уже оставили оценку по этой заявке.</div>
+    <a href="/tickets/{{ ticket.id }}/" class="btn btn-primary">Вернуться к заявке</a>
+</div>
+{% endblock %} 

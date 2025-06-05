@@ -1,0 +1,240 @@
+{% extends 'support_system/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Панель отчетов</h2>
+    
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Фильтры</h5>
+            <form id="reportFilters" class="row g-3">
+                <div class="col-md-4">
+                    <label for="startDate" class="form-label">Начальная дата</label>
+                    <input type="date" class="form-control" id="startDate" name="start_date">
+                </div>
+                <div class="col-md-4">
+                    <label for="endDate" class="form-label">Конечная дата</label>
+                    <input type="date" class="form-control" id="endDate" name="end_date">
+                </div>
+                <div class="col-md-4">
+                    <label for="category" class="form-label">Категория</label>
+                    <select class="form-select" id="category" name="category_id">
+                        <option value="">Все категории</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <div class="btn-group mb-2" role="group" aria-label="Быстрый выбор периода">
+                        <button type="button" class="btn btn-outline-secondary" onclick="setPeriod('day')">За день</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="setPeriod('week')">За неделю</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="setPeriod('month')">За месяц</button>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Применить фильтры</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Типы отчетов -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Отчет по заявкам</h5>
+                    <p class="card-text">Статистика по всем заявкам в системе</p>
+                    <button class="btn btn-primary" onclick="generateReport('tickets')">Сформировать</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Отчет по специалистам</h5>
+                    <p class="card-text">Эффективность работы специалистов поддержки</p>
+                    <button class="btn btn-primary" onclick="generateReport('support')">Сформировать</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Отчет по пользователям</h5>
+                    <p class="card-text">Активность и статистика пользователей</p>
+                    <button class="btn btn-primary" onclick="generateReport('users')">Сформировать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Графики -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Распределение заявок по статусам</h5>
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Заявки по категориям</h5>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Средняя оценка работы специалистов:
+                {% if avg_rating %}{{ avg_rating|floatformat:1 }} / 5{% else %}Нет оценок{% endif %}
+            </h5>
+            <p>Всего оценок: {{ ratings_count }}</p>
+            {% if top_specialists %}
+                <h6>Топ-специалисты:</h6>
+                <ul>
+                    {% for specialist in top_specialists %}
+                        <li>
+                            {{ specialist.get_full_name|default:specialist.username }} —
+                            {{ specialist.avg_score|floatformat:1 }} / 5 ({{ specialist.ratings_count }} оценок)
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Рейтинг специалистов</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Специалист</th>
+                            <th>Средняя оценка</th>
+                            <th>Обработано заявок</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for specialist in specialists_rating %}
+                        <tr>
+                            <td>{{ specialist.get_full_name|default:specialist.username }}</td>
+                            <td>{% if specialist.avg_score %}{{ specialist.avg_score|floatformat:2 }}{% else %}—{% endif %}</td>
+                            <td>{{ specialist.tickets_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let statusChart = null;
+let categoryChart = null;
+
+function recreateCanvas(canvasId) {
+    const oldCanvas = document.getElementById(canvasId);
+    const parent = oldCanvas.parentNode;
+    parent.removeChild(oldCanvas);
+    const newCanvas = document.createElement('canvas');
+    newCanvas.id = canvasId;
+    parent.appendChild(newCanvas);
+}
+
+function updateCharts(data, type) {
+    if (type === 'tickets') {
+        // Статусы
+        recreateCanvas('statusChart');
+        if (data.by_status && data.by_status.length > 0) {
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(statusCtx, {
+                type: 'pie',
+                data: {
+                    labels: data.by_status.map(item => item.status),
+                    datasets: [{
+                        data: data.by_status.map(item => item.count),
+                        backgroundColor: ['#ffc107', '#17a2b8', '#28a745']
+                    }]
+                }
+            });
+        }
+        // Категории
+        recreateCanvas('categoryChart');
+        if (data.by_category && data.by_category.length > 0) {
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(categoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.by_category.map(item => item.name),
+                    datasets: [{
+                        label: 'Количество заявок',
+                        data: data.by_category.map(item => item.count),
+                        backgroundColor: '#007bff'
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    } else {
+        alert('Отчёт для выбранного типа пока не реализован.');
+    }
+}
+
+function setPeriod(period) {
+    const end = new Date();
+    let start = new Date();
+    switch(period) {
+        case 'day':
+            start.setDate(end.getDate() - 1);
+            break;
+        case 'week':
+            start.setDate(end.getDate() - 7);
+            break;
+        case 'month':
+            start.setMonth(end.getMonth() - 1);
+            break;
+    }
+    document.getElementById('startDate').value = start.toISOString().slice(0, 10);
+    document.getElementById('endDate').value = end.toISOString().slice(0, 10);
+    generateReport('tickets');
+}
+
+function generateReport(type) {
+    const filters = new FormData(document.getElementById('reportFilters'));
+    const params = new URLSearchParams(filters);
+    fetch(`/reports/generate/${type}/?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            updateCharts(data, type);
+        })
+        .catch(error => {
+            console.error('Ошибка при получении данных:', error);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setPeriod('month');
+    document.getElementById('reportFilters').addEventListener('submit', function(e) {
+        e.preventDefault();
+        generateReport('tickets');
+    });
+});
+</script>
+{% endblock %} 

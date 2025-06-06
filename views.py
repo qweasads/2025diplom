@@ -20,7 +20,7 @@ from .decorators import admin_required, support_required
 
 
 def index(request):
-    """Главная страница"""
+    # Главная страница
     if request.user.is_authenticated:
         return redirect('dashboard')
     
@@ -34,7 +34,7 @@ def index(request):
 
 
 def login_view(request):
-    """Страница входа"""
+    # Страница входа
     if request.user.is_authenticated:
         return redirect('dashboard')
     
@@ -58,7 +58,7 @@ def login_view(request):
 
 
 def register_view(request):
-    """Страница регистрации"""
+    # Страница регистрации
     if request.user.is_authenticated:
         return redirect('dashboard')
     
@@ -77,7 +77,7 @@ def register_view(request):
 
 @login_required
 def logout_view(request):
-    """Выход из системы"""
+    # Выход из системы
     logout(request)
     messages.success(request, 'Вы успешно вышли из системы.')
     return redirect('login')
@@ -85,7 +85,7 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    """Главная страница после входа"""
+    # Главная страница после входа
     user = request.user
     
     if user.is_admin:
@@ -151,7 +151,7 @@ def dashboard(request):
 
 @login_required
 def create_ticket(request):
-    """Создание новой заявки"""
+    # Создание новой заявки
     if request.method == 'POST':
         form = TicketForm(request.POST, request.FILES)
         if form.is_valid():
@@ -194,7 +194,7 @@ def create_ticket(request):
 
 @login_required
 def ticket_detail(request, ticket_id):
-    """Просмотр детальной информации о заявке"""
+    # Просмотр детальной информации о заявке
     ticket = get_object_or_404(Ticket, id=ticket_id)
     
     # Проверяем права доступа
@@ -214,10 +214,10 @@ def ticket_detail(request, ticket_id):
 
 @login_required
 def reply_ticket(request, ticket_id):
-    """Ответ на заявку"""
+    # Ответ на заявку
     ticket = get_object_or_404(Ticket, id=ticket_id)
     
-    # Проверяем права доступа
+    # Проверка прав доступа
     if not (request.user == ticket.user or request.user.is_admin or 
             (request.user.is_support and (request.user == ticket.support_user or 
                                          ticket.category in request.user.categories.all()))):
@@ -366,7 +366,6 @@ def support_tickets(request):
             Q(user__email__icontains=search)
         )
     
-    # Пагинация
     paginator = Paginator(tickets, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)

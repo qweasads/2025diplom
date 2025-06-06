@@ -205,7 +205,7 @@ class Content(models.Model):
 
 class FAQ(models.Model):
     """Модель для часто задаваемых вопросов"""
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='faqs', verbose_name=_('Раздел'))
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='faqs', verbose_name=_('Раздел'), null=True, blank=True)
     question = models.CharField(max_length=255, verbose_name=_('Вопрос'))
     answer = models.TextField(verbose_name=_('Ответ'))
     order = models.PositiveIntegerField(default=0, verbose_name=_('Порядок'))
@@ -223,7 +223,7 @@ class KnowledgeBase(models.Model):
     """Модель для базы знаний"""
     title = models.CharField(max_length=255, verbose_name=_('Заголовок'))
     content = models.TextField(verbose_name=_('Содержание'))
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='knowledge_base', verbose_name=_('Раздел'))
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='knowledge_base', verbose_name=_('Раздел'), null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата создания'))
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Дата обновления'))
     

@@ -16,11 +16,9 @@
         
         <div class="card mb-4">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="badge bg-secondary">{{ article.category.name }}</span>
+                <div class="mb-3">
                     <small class="text-muted">Обновлено: {{ article.updated_at|date:"d.m.Y H:i" }}</small>
                 </div>
-                
                 <div class="article-content">
                     {{ article.content|linebreaks }}
                 </div>
@@ -29,9 +27,6 @@
         
         <div class="d-flex justify-content-between">
             <a href="{% url 'knowledge_base' %}" class="btn btn-secondary">Назад к списку</a>
-            {% if user.is_admin %}
-                <a href="{% url 'edit_knowledge_base' article.id %}" class="btn btn-primary">Редактировать</a>
-            {% endif %}
         </div>
     </div>
 </div>

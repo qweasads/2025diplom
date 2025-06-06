@@ -26,7 +26,8 @@ from .forms import (
     ContentForm,
     FAQForm,
     KnowledgeBaseForm,
-    SupportRatingForm
+    SupportRatingForm,
+    UserProfileForm
 )
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
@@ -128,8 +129,20 @@ def knowledge_base_article(request, article_id):
 @login_required
 def user_tickets(request):
     """Список заявок пользователя"""
-    tickets = Ticket.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'support_system/tickets/list.html', {'tickets': tickets})
+    sort = request.GET.get('sort', '-created_at')
+    status = request.GET.get('status')
+    tickets = Ticket.objects.filter(user=request.user)
+    if status:
+        tickets = tickets.filter(status=status)
+    tickets = tickets.order_by(sort)
+    paginator = Paginator(tickets, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'support_system/tickets/list.html', {
+        'tickets': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'page_obj': page_obj,
+    })
 
 @login_required
 def create_ticket(request):
@@ -145,7 +158,6 @@ def create_ticket(request):
             ticket.status = 'open'
             ticket.save()
             
-            # Создаем уведомление для администраторов
             admins = User.objects.filter(is_admin=True)
             for admin in admins:
                 Notification.objects.create(
@@ -172,7 +184,6 @@ def ticket_detail(request, ticket_id):
     if request.user != ticket.user and not request.user.is_support and not request.user.is_admin:
         messages.error(request, 'У вас нет доступа к этой заявке')
         return redirect('user_tickets')
-    # Меняем статус только если тикет открыт (не закрыт) и только если это специалист
     if request.user.is_support and ticket.status == 'open':
         ticket.status = 'in-progress'
         ticket.save()
@@ -185,7 +196,6 @@ def reply_ticket(request, ticket_id):
     """Ответ на заявку"""
     ticket = get_object_or_404(Ticket, id=ticket_id)
     
-    # Проверяем права доступа
     if not (request.user == ticket.user or request.user == ticket.support_user or request.user.is_admin):
         messages.error(request, 'У вас нет прав для ответа на эту заявку')
         return redirect('ticket_detail', ticket_id=ticket.id)
@@ -202,7 +212,6 @@ def reply_ticket(request, ticket_id):
         )
         message.save()
         
-        # Обрабатываем прикрепленные файлы
         if 'files' in request.FILES:
             files = request.FILES.getlist('files')
             for file in files:
@@ -212,12 +221,11 @@ def reply_ticket(request, ticket_id):
                     filename=file.name
                 )
         
-        # Если ответил специалист поддержки, меняем статус на "в работе"
+        # Смена статуса на "в работе"
         if request.user == ticket.support_user and ticket.status == 'open':
             ticket.status = 'in_progress'
             ticket.save()
         
-        # Создаем уведомление для получателя
         recipient = ticket.user if request.user == ticket.support_user else ticket.support_user
         if recipient:
             Notification.objects.create(
@@ -243,10 +251,8 @@ def update_ticket_status(request, ticket_id):
         return JsonResponse({'error': 'Метод не поддерживается'}, status=405)
     ticket = get_object_or_404(Ticket, id=ticket_id)
     status = request.POST.get('status')
-    # Проверяем, что статус допустимый
     if status not in dict(Ticket.STATUS_CHOICES):
         return JsonResponse({'error': 'Неверный статус'}, status=400)
-    # Теперь любой саппорт может менять статус
     old_status = ticket.status
     ticket.status = status
     ticket.save()
@@ -271,11 +277,8 @@ def support_tickets(request):
     filter_type = request.GET.get('filter')
 
     if user.is_admin:
-        # Админ видит все заявки
         tickets_qs = Ticket.objects.all().order_by('-created_at')
-        # Новые заявки: не назначены
         new_tickets = Ticket.objects.filter(support_user__isnull=True, status='open')
-        # Ожидают ответа: заявки в работе, где последнее сообщение не от саппорта
         last_msg_user = TicketMessage.objects.filter(ticket=OuterRef('pk')).order_by('-created_at').values('user')[:1]
         awaiting_tickets = Ticket.objects.filter(status='in-progress').annotate(
             last_msg_user=Subquery(last_msg_user)
@@ -285,7 +288,6 @@ def support_tickets(request):
             last_msg_user=F('support_user')
         )
     else:
-        # Саппорт видит только свои и по категориям
         new_tickets = Ticket.objects.filter(
             category__support_users=user,
             support_user__isnull=True,
@@ -303,12 +305,10 @@ def support_tickets(request):
         ).exclude(
             last_msg_user=user.id
         )
-        # Все заявки: новые + мои
         tickets_qs = Ticket.objects.filter(
             Q(support_user=user) | Q(category__support_users=user, support_user__isnull=True, status='open')
         ).distinct().order_by('-created_at')
 
-    # Фильтрация по кнопкам
     if filter_type == 'new':
         tickets = new_tickets.order_by('-created_at')
     elif filter_type == 'awaiting':
@@ -316,7 +316,6 @@ def support_tickets(request):
     else:
         tickets = tickets_qs
 
-    # Пагинация
     paginator = Paginator(tickets, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -658,21 +657,17 @@ def take_ticket(request, ticket_id):
     
     ticket = get_object_or_404(Ticket, id=ticket_id)
     
-    # Проверяем, что заявка не назначена другому специалисту
     if ticket.support_user is not None:
         return JsonResponse({'error': 'Заявка уже назначена другому специалисту'}, status=400)
     
-    # Проверяем, что специалист может работать с этой категорией
     if request.user not in ticket.category.support_users.all():
         return JsonResponse({'error': 'Вы не можете работать с заявками этой категории'}, status=403)
     
     try:
-        # Назначаем заявку специалисту
         ticket.support_user = request.user
         ticket.status = 'in-progress'
         ticket.save()
         
-        # Создаем уведомление для пользователя
         Notification.objects.create(
             user=ticket.user,
             ticket=ticket,
@@ -698,14 +693,12 @@ def notifications_processor(request):
         context['notifications'] = notifications_qs[:5]
         context['notifications_count'] = notifications_qs.count()
         if request.user.is_support:
-            # Новые заявки из категорий специалиста (без support_user и статус open)
             new_tickets_count = Ticket.objects.filter(
                 category__support_users=request.user,
                 support_user__isnull=True,
                 status='open'
             ).count()
             context['new_tickets_count'] = new_tickets_count
-            # Заявки, ожидающие ответа более 24 часов
             day_ago = timezone.now() - timedelta(days=1)
             context['waiting_response_count'] = Ticket.objects.filter(
                 support_user=request.user,
@@ -742,9 +735,8 @@ def rate_specialist(request, ticket_id):
         form = SupportRatingForm()
     return render(request, 'support_system/tickets/rate_specialist.html', {'form': form, 'ticket': ticket})
 
-# --- Аналитика по оценкам в dashboard ---
 def reports_dashboard(request):
-    # ... существующая логика ...
+
     avg_rating = SupportRating.objects.aggregate(avg=Avg('score'))['avg']
     ratings_count = SupportRating.objects.count()
     top_specialists = User.objects.filter(
@@ -764,3 +756,15 @@ def reports_dashboard(request):
         'specialists_rating': specialists_rating,
     }
     return render(request, 'report_system/dashboard.html', context)
+
+@login_required
+def edit_profile(request):
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Ваш профиль успешно обновлен.')
+            return redirect('profile')
+    else:
+        form = UserProfileForm(instance=request.user)
+    return render(request, 'support_system/edit_profile.html', {'form': form})

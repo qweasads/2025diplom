@@ -9,6 +9,7 @@ class UserRegistrationForm(UserCreationForm):
     # Форма регистрации пользователя
     email = forms.EmailField(
         label=_('Адрес электронной почты'),
+        widget=forms.TextInput(attrs={'autocomplete': 'email'}),
         error_messages={
             'invalid': _('Введите корректный адрес электронной почты.'),
             'required': _('Пожалуйста, укажите адрес электронной почты.'),
@@ -49,10 +50,11 @@ class UserRegistrationForm(UserCreationForm):
     )
     phone = forms.CharField(
         label=_('Телефон'),
-        required=False,
         error_messages={
             'invalid': _('Введите корректный номер телефона.'),
-        }
+            'required': _('Пожалуйста, укажите номер телефона.'),
+        },
+        widget=forms.TextInput(attrs={'pattern': r'^[+]?\d{10,15}$', 'title': 'Только цифры, можно начинать с +', 'inputmode': 'tel'})
     )
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
@@ -63,13 +65,27 @@ class UserRegistrationForm(UserCreationForm):
             if len(password1) < 8:
                 raise ValidationError(_('Пароль слишком короткий. Минимум 8 символов.'))
         return password2
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone', '').strip()
+        print('DEBUG phone:', repr(phone))
+        import re
+        if phone:
+            if not re.fullmatch(r'^[+]?[0-9]{10,15}$', phone):
+                raise ValidationError(_('Введите корректный номер телефона (только цифры, 10-15 символов, можно начинать с +).'))
+            digits = phone[1:] if phone.startswith('+') else phone
+            if not (10 <= len(digits) <= 15):
+                raise ValidationError(_('Длина номера телефона должна быть от 10 до 15 цифр.'))
+        return phone
     class Meta:
         model = User
         fields = ('username', 'email', 'password1', 'password2', 'first_name', 'last_name', 'phone')
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Удаляем все стандартные валидаторы пароля кроме длины
         self.fields['password1'].validators = [v for v in self.fields['password1'].validators if v.__class__.__name__ == 'MinimumLengthValidator']
+
+    def save(self, commit=True):
+        self.full_clean()
+        return super().save(commit=commit)
 
 
 class UserLoginForm(forms.Form):
@@ -135,7 +151,8 @@ class TicketForm(forms.ModelForm):
         queryset=Category.objects.all(),
         widget=forms.Select(attrs={
             'class': 'form-select'
-        })
+        }),
+        empty_label=None
     )
     
     class Meta:
@@ -190,4 +207,15 @@ class SupportRatingForm(forms.ModelForm):
         fields = ['score', 'comment']
         widgets = {
             'comment': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Комментарий (необязательно)'}),
+        }
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }

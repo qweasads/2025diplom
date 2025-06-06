@@ -17,6 +17,7 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('notifications/', views.notifications, name='notifications'),
     path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('profile/edit/', views.edit_profile, name='edit_profile'),
     
     # Заявки пользователей
     path('tickets/', views.user_tickets, name='user_tickets'),

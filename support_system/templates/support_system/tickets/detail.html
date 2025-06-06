@@ -87,7 +87,7 @@
                     <div class="mb-2"><strong>Специалист</strong><br>{{ ticket.support_user.get_full_name|default:ticket.support_user.username }}</div>
                 {% endif %}
                 <hr>
-                <div class="mb-2"><strong>Ник</strong><br>{{ ticket.user.username }}</div>
+                <div class="mb-2"><strong>Имя пользователя</strong><br>{{ ticket.user.get_full_name }}</div>
                 <div class="mb-2"><strong>Категория</strong><br>{{ ticket.category.name }}</div>
                 <div class="mb-2"><strong>Тема заявки</strong><br>{{ ticket.title }}</div>
             </div>

@@ -10,14 +10,14 @@
         {% if articles %}
             <div class="list-group">
                 {% for article in articles %}
-                    <a href="{% url 'knowledge_base_article' article.id %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">{{ article.title }}</h5>
-                            <small class="text-muted">{{ article.category.name }}</small>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title mb-2">
+                                <a href="{% url 'knowledge_base_article' article.id %}" class="text-decoration-none">{{ article.title }}</a>
+                            </h5>
+                            <div class="text-muted small">Обновлено: {{ article.updated_at|date:"d.m.Y H:i" }}</div>
                         </div>
-                        <p class="mb-1">{{ article.content|truncatewords:30 }}</p>
-                        <small class="text-muted">Обновлено: {{ article.updated_at|date:"d.m.Y H:i" }}</small>
-                    </a>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}

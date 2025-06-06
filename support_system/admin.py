@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
-from .models import User, Category, Ticket, TicketMessage, File, Content, Notification
+from .models import User, Category, Ticket, TicketMessage, File, Content, Notification, FAQ, KnowledgeBase
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
@@ -65,3 +65,17 @@ class ContentAdmin(admin.ModelAdmin):
     list_filter = ('type', 'category', 'updated_at')
     search_fields = ('title', 'content')
     ordering = ('category', 'order', '-updated_at')
+
+@admin.register(FAQ)
+class FAQAdmin(admin.ModelAdmin):
+    list_display = ('question', 'order')
+    search_fields = ('question', 'answer')
+    ordering = ('order',)
+    exclude = ('category',)
+
+@admin.register(KnowledgeBase)
+class KnowledgeBaseAdmin(admin.ModelAdmin):
+    list_display = ('title', 'updated_at')
+    search_fields = ('title', 'content')
+    ordering = ('-updated_at',)
+    exclude = ('category',)

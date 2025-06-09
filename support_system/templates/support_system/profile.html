@@ -40,6 +40,9 @@
                     <a href="{% url 'user_tickets' %}" class="btn btn-primary">Мои заявки</a>
                     <a href="{% url 'notifications' %}" class="btn btn-primary ms-2">Уведомления</a>
                     <a href="{% url 'edit_profile' %}" class="btn btn-primary ms-2">Редактировать профиль</a>
+                    {% if user.is_admin %}
+                        <a href="{% url 'admin_api_token' %}" class="btn btn-outline-primary ms-2">API-ключ для интеграций</a>
+                    {% endif %}
                 </div>
             </div>
         </div>

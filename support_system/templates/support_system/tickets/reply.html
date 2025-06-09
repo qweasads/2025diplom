@@ -65,10 +65,14 @@
                                     <small class="text-muted">{{ message.created_at|date:"d.m.Y H:i" }}</small>
                                 </div>
                                 <p class="mb-1">{{ message.text }}</p>
-                                {% if message.file %}
-                                    <a href="{{ message.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                        <i class="fas fa-download"></i> Скачать файл
-                                    </a>
+                                {% if message.files.all %}
+                                    <div class="mt-2">
+                                        {% for file in message.files.all %}
+                                            <a href="{{ file.file.url }}" class="btn btn-sm btn-outline-primary me-2" target="_blank" download>
+                                                <i class="fas fa-paperclip"></i> {{ file.filename }}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
                                 {% endif %}
                             </div>
                             {% if not forloop.last %}

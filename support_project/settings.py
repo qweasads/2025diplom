@@ -19,6 +19,8 @@ INSTALLED_APPS = [
     'support_system',
     'report_system',
     'crispy_forms',
+    'drf_yasg',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -42,6 +44,7 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
+                'django.template.context_processors.static',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'support_system.views.notifications_processor',
@@ -98,3 +101,19 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://help-desk-24.ru",
+    "https://help-desk-24.ru",
+]
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Token': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'Формат: Token <ваш_ключ>',
+        }
+    }
+}

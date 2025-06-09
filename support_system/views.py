@@ -32,6 +32,7 @@ from .forms import (
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+from rest_framework.authtoken.models import Token
 
 def index(request):
     """Главная страница"""
@@ -226,11 +227,20 @@ def reply_ticket(request, ticket_id):
             ticket.status = 'in_progress'
             ticket.save()
         
-        recipient = ticket.user if request.user == ticket.support_user else ticket.support_user
-        if recipient:
+        # Уведомление специалиста о новом ответе пользователя
+        if request.user == ticket.user and ticket.support_user:
             Notification.objects.create(
-                user=recipient,
+                user=ticket.support_user,
                 ticket=ticket,
+                message=message,
+                type='message_created',
+                text=f'Новый ответ в заявке #{ticket.id}'
+            )
+        elif request.user == ticket.support_user and ticket.user:
+            Notification.objects.create(
+                user=ticket.user,
+                ticket=ticket,
+                message=message,
                 type='reply',
                 text=f'Новый ответ в заявке #{ticket.id}'
             )
@@ -433,7 +443,30 @@ def create_support(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
         category_ids = request.POST.getlist('categories')
-        
+        errors = {}
+        if not username:
+            errors['username'] = 'Пожалуйста, заполните имя пользователя.'
+        if not email:
+            errors['email'] = 'Пожалуйста, заполните email.'
+        elif '@' not in email or '.' not in email:
+            errors['email'] = 'Введите корректный email.'
+        if not password:
+            errors['password'] = 'Пожалуйста, введите пароль.'
+        elif len(password) < 8:
+            errors['password'] = 'Пароль должен быть не менее 8 символов.'
+        if not category_ids:
+            errors['categories'] = 'Выберите хотя бы одну категорию.'
+        if errors:
+            support_users = User.objects.filter(is_support=True).annotate(
+                active_tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='in_progress'))
+            )
+            categories = Category.objects.all()
+            return render(request, 'support_system/admin/support_users.html', {
+                'support_users': support_users,
+                'categories': categories,
+                'form_errors': errors,
+                'form_data': request.POST
+            })
         try:
             user = User.objects.create_user(
                 username=username,
@@ -736,7 +769,6 @@ def rate_specialist(request, ticket_id):
     return render(request, 'support_system/tickets/rate_specialist.html', {'form': form, 'ticket': ticket})
 
 def reports_dashboard(request):
-
     avg_rating = SupportRating.objects.aggregate(avg=Avg('score'))['avg']
     ratings_count = SupportRating.objects.count()
     top_specialists = User.objects.filter(
@@ -747,7 +779,7 @@ def reports_dashboard(request):
     ).order_by('-avg_score')[:5]
     specialists_rating = User.objects.filter(is_support=True).annotate(
         avg_score=Avg('specialist_ratings__score'),
-        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed'))
+        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed', assigned_tickets__support_user=OuterRef('pk')))
     ).order_by('-avg_score', '-tickets_count')[:10]
     context = {
         'avg_rating': avg_rating,
@@ -768,3 +800,20 @@ def edit_profile(request):
     else:
         form = UserProfileForm(instance=request.user)
     return render(request, 'support_system/edit_profile.html', {'form': form})
+
+@login_required
+def admin_api_token(request):
+    if not request.user.is_admin:
+        messages.error(request, 'Доступ запрещён')
+        return redirect('profile')
+    token = Token.objects.filter(user=request.user).first()
+    if request.method == 'POST':
+        if 'generate' in request.POST:
+            token, created = Token.objects.get_or_create(user=request.user)
+            messages.success(request, 'API-ключ сгенерирован!')
+        elif 'revoke' in request.POST:
+            if token:
+                token.delete()
+                token = None
+                messages.success(request, 'API-ключ отозван!')
+    return render(request, 'support_system/admin_api_token.html', {'token': token})

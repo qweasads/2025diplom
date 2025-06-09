@@ -73,7 +73,7 @@
                 <div class="mb-2">
                     {% if user.is_support or user.is_admin %}
                         <label for="status-select"><strong>Статус</strong></label><br>
-                        <select id="status-select" class="form-select form-select-sm w-auto d-inline-block" style="min-width:120px;" data-ticket-id="{{ ticket.id }}">
+                        <select id="status-select" class="form-select status-select-custom" data-ticket-id="{{ ticket.id }}">
                             <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Открыта</option>
                             <option value="in-progress" {% if ticket.status == 'in-progress' %}selected{% endif %}>В работе</option>
                             <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Закрыта</option>
@@ -172,4 +172,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<style>
+.status-select-custom {
+    min-width: 160px;
+    max-width: 220px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.10);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-size: 1.08em;
+    font-weight: 500;
+    background: #fff;
+    color: #23272a;
+    border: 1.5px solid #e0e0e0;
+}
+.status-select-custom:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #2563eb33;
+    outline: none;
+}
+body.dark-theme .status-select-custom {
+    background: #23272a;
+    color: #e0e0e0;
+    border-color: #444950;
+}
+body.dark-theme .status-select-custom:focus {
+    border-color: #ffd700;
+    box-shadow: 0 0 0 2px #ffd70033;
+}
+</style>
 {% endblock %} 

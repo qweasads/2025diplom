@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ru">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Система поддержки{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
         html, body {
             height: 100%;
@@ -16,8 +18,6 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            color: var(--dark-text);
-            background-color: var(--light-bg);
         }
         .main-content {
             flex: 1 0 auto;
@@ -39,13 +39,6 @@
             flex-direction: column;
             justify-content: center;
         }
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --light-bg: #f8f9fa;
-            --dark-text: #2c3e50;
-        }
         .navbar {
             background-color: var(--primary-color);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -65,14 +58,6 @@
             margin-right: 0.5rem;
             margin-bottom: 0.5rem;
         }
-        .btn-primary {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
-        }
-        .btn-primary:hover {
-            background-color: #2980b9;
-            border-color: #2980b9;
-        }
         .card {
             border: none;
             border-radius: 10px;
@@ -83,7 +68,7 @@
             transform: translateY(-5px);
         }
         .card-header {
-            background-color: white;
+            background-color: var(--light-bg);
             border-bottom: 1px solid rgba(0,0,0,0.1);
             font-weight: 600;
         }
@@ -114,7 +99,6 @@
             max-width: 950px;
             margin: 40px auto 1.2rem auto;
             padding: 32px 24px;
-            background: #fff;
             border-radius: 18px;
             box-shadow: 0 4px 24px rgba(44,62,80,0.08);
         }
@@ -128,7 +112,7 @@
             font-size: 1.1rem;
             text-align: center;
             margin-bottom: 1.2rem;
-            color: #555;
+            color: var(--dark-text);
         }
         .main-welcome-buttons {
             display: flex;
@@ -154,7 +138,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: #fafbfc;
             justify-content: flex-start;
             height: 100%;
             text-align: center;
@@ -167,7 +150,6 @@
         .main-card-text {
             font-size: 0.97rem;
             margin-bottom: 0.5rem;
-            color: #444;
         }
         .main-card .btn {
             margin-top: auto;
@@ -179,9 +161,105 @@
             .main-cards-outer { max-width: 98vw; padding: 16px 4px; }
             .main-welcome-title { font-size: 1.3rem; }
         }
+        body, .main-cards-outer, .main-card, .card, .navbar, .footer, .table, .form-control, .dropdown-menu, .btn, .alert {
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+        body.dark-theme {
+            background: #23272a !important;
+        }
+        body.dark-theme .navbar,
+        body.dark-theme .footer {
+            background-color: var(--primary-color) !important;
+            color: var(--dark-text) !important;
+        }
+        body.dark-theme .main-cards-outer,
+        body.dark-theme .main-card,
+        body.dark-theme .card,
+        body.dark-theme .card-header,
+        body.dark-theme .footer,
+        body.dark-theme .navbar {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        body.dark-theme .main-cards-outer {
+            border: 1.5px solid #444950 !important;
+        }
+        body.dark-theme .btn,
+        body.dark-theme .btn-primary,
+        body.dark-theme .btn-outline-primary,
+        body.dark-theme .btn-secondary,
+        body.dark-theme .btn-success,
+        body.dark-theme .btn-danger,
+        body.dark-theme .btn-info,
+        body.dark-theme .btn-warning {
+            border: 1.5px solid #888 !important;
+        }
+        body.dark-theme .table {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-theme .table th,
+        body.dark-theme .table td {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+            border-color: #444950 !important;
+        }
+        body.dark-theme .form-control,
+        body.dark-theme select,
+        body.dark-theme input,
+        body.dark-theme textarea {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+            border: 1px solid #444950 !important;
+        }
+        body.dark-theme .dropdown-menu {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-theme .dropdown-menu .dropdown-item {
+            color: #e0e0e0 !important;
+        }
+        body.dark-theme .dropdown-menu .dropdown-item:hover {
+            background: #444950 !important;
+            color: #fff !important;
+        }
+        body.dark-theme .main-card,
+        body.dark-theme .main-card-title,
+        body.dark-theme .main-card-text,
+        body.dark-theme .card,
+        body.dark-theme .card-title,
+        body.dark-theme .card-text,
+        body.dark-theme .alert-info,
+        body.dark-theme .accordion-button,
+        body.dark-theme .accordion-body {
+            color: #e0e0e0 !important;
+        }
+        body.dark-theme .pagination,
+        body.dark-theme .page-link {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+            border-color: #444950 !important;
+        }
+        body.dark-theme .page-link.active, body.dark-theme .active > .page-link {
+            background: #444950 !important;
+            color: #fff !important;
+            border-color: #666b73 !important;
+        }
+        body.dark-theme .accordion-button:not(.collapsed) {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-theme .accordion-button.collapsed {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-theme .accordion-item {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+        }
     </style>
 </head>
-<body>
+<body{% if user.is_admin %} class="admin-panel"{% endif %}{% block body_class %}{% endblock %}>
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="{% url 'index' %}">
@@ -193,7 +271,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'index' %}">Главная</a>
+                        <a class="nav-link d-flex align-items-center" href="{% url 'index' %}">Главная</a>
                     </li>
                     {% if not user.is_support %}
                     <li class="nav-item">
@@ -249,6 +327,11 @@
                                 <li><span class="dropdown-item text-muted">Нет новых уведомлений</span></li>
                             {% endif %}
                         </ul>
+                    </li>
+                    <li class="nav-item d-flex align-items-center">
+                        <button id="theme-toggle" title="Сменить тему" style="background: none; border: none; cursor: pointer; padding: 0 8px; font-size: 1.5rem;">
+                            <i id="theme-icon" class="fas fa-moon"></i>
+                        </button>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
-            background: #ffcccc !important;
+            /* layout-стили оставляем, фон и цвет убираем */
         }
         .main-welcome-title {
             font-size: 1.5rem;
@@ -21,13 +21,13 @@
             font-size: 0.98rem;
             text-align: center;
             margin-bottom: 1.1rem;
-            color: #555;
+            color: var(--dark-text);
         }
         .main-cards-outer {
+            /* layout-стили оставляем, фон и цвет убираем */
             max-width: 950px;
             margin: 0 auto 1.2rem auto;
             padding: 32px 24px;
-            background: #fff;
             border-radius: 18px;
             box-shadow: 0 4px 24px rgba(44,62,80,0.08);
         }
@@ -48,7 +48,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: #fafbfc;
         }
         .main-card-title {
             font-size: 1.01rem;
@@ -58,7 +57,6 @@
         .main-card-text {
             font-size: 0.89rem;
             margin-bottom: 0.5rem;
-            color: #444;
         }
         .main-card .btn {
             padding: 0.22rem 0.7rem;
@@ -68,6 +66,51 @@
             .main-cards-row { flex-direction: column !important; gap: 1rem; }
             .main-card { min-height: 90px; max-width: 100%; }
             .main-cards-outer { max-width: 98vw; padding: 16px 4px; }
+        }
+        body, .main-cards-outer, .main-card, .card, .navbar, .footer {
+            transition: background 0.3s, color 0.3s;
+        }
+        body.dark-theme .main-cards-outer,
+        body.dark-theme .main-card,
+        body.dark-theme .card,
+        body.dark-theme .card-header {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-theme .table {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-theme .table th,
+        body.dark-theme .table td {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+            border-color: #444950 !important;
+        }
+        body.dark-theme .form-control,
+        body.dark-theme select,
+        body.dark-theme input,
+        body.dark-theme textarea {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+            border: 1px solid #444950 !important;
+        }
+        body.dark-theme .dropdown-menu {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark-theme .btn {
+            background-color: #444950 !important;
+            color: #fff !important;
+            border-color: #444950 !important;
+        }
+        body.dark-theme .btn:hover {
+            background-color: #666b73 !important;
+        }
+        body.dark-theme .alert {
+            background: #23272a !important;
+            color: #e0e0e0 !important;
+            border-color: #444950 !important;
         }
     </style>
 </head>
@@ -98,6 +141,9 @@
                     {% endif %}
                 </ul>
             </nav>
+            <button id="theme-toggle" title="Сменить тему" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">
+                <i id="theme-icon" class="fas fa-moon"></i>
+            </button>
         </div>
     </header>
 
@@ -153,5 +199,29 @@
 
     <script src="/static/js/main.js"></script>
     {% block scripts %}{% endblock %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        function updateIcon() {
+            if (document.body.classList.contains('dark-theme')) {
+                themeIcon.className = 'fas fa-sun';
+            } else {
+                themeIcon.className = 'fas fa-moon';
+            }
+        }
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
+        }
+        updateIcon();
+        if (themeToggle) {
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-theme');
+                localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+                updateIcon();
+            });
+        }
+    });
+    </script>
 </body>
 </html>

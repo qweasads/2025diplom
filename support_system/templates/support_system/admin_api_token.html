@@ -1,0 +1,29 @@
+{% extends 'support_system/base.html' %}
+{% block title %}API-ключ администратора{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>API-ключ для интеграций</h2>
+    <div class="card p-4 mt-3" style="max-width: 500px;">
+        {% if token %}
+            <div class="mb-3">
+                <strong>Ваш API-ключ:</strong>
+                <div class="alert alert-success mt-2" style="word-break: break-all;">
+                    <code>{{ token.key }}</code>
+                </div>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="revoke" class="btn btn-danger">Отозвать ключ</button>
+            </form>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="generate" class="btn btn-primary">Сгенерировать API-ключ</button>
+            </form>
+        {% endif %}
+        <div class="mt-3 text-muted small">
+            Используйте этот ключ для интеграции с API.<br>
+        </div>
+    </div>
+</div>
+{% endblock %} 

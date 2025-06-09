@@ -1,5 +1,36 @@
 {% extends 'support_system/base.html' %}
 
+<style>
+body.dark-theme .card,
+body.dark-theme .table,
+body.dark-theme .table-bordered {
+    background: transparent !important;
+    border: 1.5px solid #444950 !important;
+    color: #e0e0e0 !important;
+}
+body.dark-theme .card .list-group,
+body.dark-theme .card .list-group-item {
+    background: #23272a !important;
+    color: #e0e0e0 !important;
+    border-color: #444950 !important;
+}
+body.dark-theme .card-title,
+body.dark-theme .card-body,
+body.dark-theme .table th,
+body.dark-theme .table td {
+    color: #e0e0e0 !important;
+}
+body.dark-theme .btn,
+body.dark-theme .btn-primary,
+body.dark-theme .btn-outline-primary {
+    border: 1.5px solid #888 !important;
+}
+body.dark-theme .rating-card-border {
+    border-bottom: 2.5px solid #888 !important;
+    border-radius: 0 0 12px 12px;
+}
+</style>
+
 {% block content %}
 <div class="container mt-4">
     <h2>Панель отчетов</h2>
@@ -68,7 +99,7 @@
         </div>
     </div>
 
-    <div class="card mt-3">
+    <div class="card mt-3 rating-card-border">
         <div class="card-body">
             <h5>Рейтинг специалистов</h5>
             <div class="table-responsive">

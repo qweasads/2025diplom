@@ -7,7 +7,6 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
 class User(AbstractUser):
-    """Расширенная модель пользователя"""
     is_support = models.BooleanField(default=False, verbose_name=_('Специалист поддержки'))
     is_admin = models.BooleanField(default=False, verbose_name=_('Администратор'))
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name=_('Телефон'))
@@ -21,7 +20,6 @@ class User(AbstractUser):
 
 
 class Category(models.Model):
-    """Модель для разделов (категорий) заявок"""
     name = models.CharField(max_length=100, verbose_name=_('Название'))
     description = models.TextField(blank=True, null=True, verbose_name=_('Описание'))
     support_users = models.ManyToManyField(User, related_name='categories', blank=True, verbose_name=_('Специалисты поддержки'))
@@ -40,7 +38,6 @@ class Category(models.Model):
 
 
 class Ticket(models.Model):
-    """Модель для заявок (тикетов)"""
     STATUS_CHOICES = (
         ('open', _('Открыт')),
         ('in-progress', _('В процессе')),
@@ -66,7 +63,6 @@ class Ticket(models.Model):
 
 
 class TicketMessage(models.Model):
-    """Модель для сообщений в заявке"""
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='messages', verbose_name=_('Заявка'))
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_('Пользователь'))
     content = models.TextField(verbose_name=_('Сообщение'), blank=True, null=True)
@@ -82,17 +78,14 @@ class TicketMessage(models.Model):
 
 
 def ticket_file_path(instance, filename):
-    """Функция для определения пути сохранения файлов заявок"""
     return f"tickets/{instance.ticket.id}/{filename}"
 
 
 def message_file_path(instance, filename):
-    """Функция для определения пути сохранения файлов сообщений"""
     return f"tickets/{instance.message.ticket.id}/messages/{instance.message.id}/{filename}"
 
 
 class TicketFile(models.Model):
-    """Модель для файлов, прикрепленных к заявке"""
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='files', verbose_name=_('Заявка'))
     file = models.FileField(upload_to=ticket_file_path, verbose_name=_('Файл'))
     filename = models.CharField(max_length=255, verbose_name=_('Имя файла'))
@@ -112,7 +105,6 @@ class TicketFile(models.Model):
 
 
 class MessageFile(models.Model):
-    """Модель для файлов, прикрепленных к сообщениям"""
     message = models.ForeignKey(TicketMessage, on_delete=models.CASCADE, related_name='files', verbose_name=_('Сообщение'))
     file = models.FileField(upload_to=message_file_path, verbose_name=_('Файл'))
     filename = models.CharField(max_length=255, verbose_name=_('Имя файла'))
@@ -132,7 +124,6 @@ class MessageFile(models.Model):
 
 
 class Notification(models.Model):
-    """Модель для уведомлений"""
     TYPE_CHOICES = (
         ('ticket_created', _('Создана новая заявка')),
         ('ticket_updated', _('Заявка обновлена')),
@@ -158,7 +149,6 @@ class Notification(models.Model):
 
 
 class File(models.Model):
-    """Универсальная модель для файлов"""
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
@@ -180,7 +170,7 @@ class File(models.Model):
 
 
 class Content(models.Model):
-    """Универсальная модель для контента (FAQ и База знаний)"""
+
     CONTENT_TYPES = (
         ('faq', _('FAQ')),
         ('kb', _('База знаний')),
@@ -220,7 +210,6 @@ class FAQ(models.Model):
 
 
 class KnowledgeBase(models.Model):
-    """Модель для базы знаний"""
     title = models.CharField(max_length=255, verbose_name=_('Заголовок'))
     content = models.TextField(verbose_name=_('Содержание'))
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='knowledge_base', verbose_name=_('Раздел'), null=True, blank=True)

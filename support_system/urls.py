@@ -47,8 +47,9 @@ urlpatterns = [
     # Отчеты
     path('reports/', include('report_system.urls')),
     
-    # Добавляем URL-маршрут для редактирования профиля
     path('profile/edit/', views.edit_profile, name='edit_profile'),
+    
+    path('profile/api-token/', views.admin_api_token, name='admin_api_token'),
 ]
 
 if settings.DEBUG:

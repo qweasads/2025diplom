@@ -9,17 +9,21 @@
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">Вход в систему</h2>
                 
-                <form method="post">
+                <form method="post" novalidate>
                     {% csrf_token %}
                     
                     {% for field in form %}
                         <div class="mb-3">
                             <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            {{ field }}
+                            {% with 'form-control' as base_class %}
+                                {% if field.errors %}
+                                    <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" class="{{ base_class }} is-invalid" {% if field.field.required %}required{% endif %} value="{{ field.value|default_if_none:'' }}">
+                                {% else %}
+                                    <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" class="{{ base_class }}" {% if field.field.required %}required{% endif %} value="{{ field.value|default_if_none:'' }}">
+                                {% endif %}
+                            {% endwith %}
                             {% if field.errors %}
-                                <div class="alert alert-danger mt-2">
-                                    {{ field.errors }}
-                                </div>
+                                <div class="invalid-feedback" style="display:block;">{{ field.errors|striptags }}</div>
                             {% endif %}
                         </div>
                     {% endfor %}

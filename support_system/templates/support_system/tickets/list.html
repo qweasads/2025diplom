@@ -15,11 +15,9 @@
             {% if tickets %}
                 <div class="list-group mb-3">
                     {% for ticket in tickets %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap mb-2 rounded shadow-sm">
+                        <a href="{% url 'ticket_detail' ticket.id %}" class="list-group-item d-flex justify-content-between align-items-center flex-wrap mb-2 rounded shadow-sm text-decoration-none" style="cursor:pointer;">
                             <div>
-                                <a href="{% url 'ticket_detail' ticket.id %}" class="fw-bold text-primary text-decoration-none">
-                                    Заявка #{{ ticket.id }}
-                                </a>
+                                <span class="fw-bold text-primary">Заявка #{{ ticket.id }}</span>
                                 <span class="text-muted small ms-2">- {{ ticket.created_at|date:"d.m.Y H:i" }}</span>
                                 <div class="mt-1 text-dark">{{ ticket.title }}</div>
                                 <div class="text-muted small">{{ ticket.description|truncatechars:60 }}</div>
@@ -27,7 +25,7 @@
                             <span class="badge bg-secondary" style="min-width: 70px; font-size: 0.95em;">
                                 {% if ticket.status == 'open' %}Открыта{% elif ticket.status == 'in-progress' %}В работе{% else %}Закрыта{% endif %}
                             </span>
-                        </div>
+                        </a>
                     {% endfor %}
                 </div>
                 {% if is_paginated %}

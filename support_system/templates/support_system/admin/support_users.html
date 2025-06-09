@@ -58,7 +58,6 @@
     </div>
 </div>
 
-<!-- Модальное окно добавления специалиста -->
 <div class="modal fade" id="addSupportModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -66,28 +65,32 @@
                 <h5 class="modal-title">Добавить специалиста поддержки</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{% url 'create_support' %}">
+            <form method="post" action="{% url 'create_support' %}" id="addSupportForm" novalidate>
                 <div class="modal-body">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="username" class="form-label">Имя пользователя</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <input type="text" class="form-control{% if form_errors.username %} is-invalid{% endif %}" id="username" name="username" required value="{{ form_data.username|default:'' }}">
+                        <div class="invalid-feedback" id="usernameError">{{ form_errors.username }}</div>
                     </div>
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+                        <input type="email" class="form-control{% if form_errors.email %} is-invalid{% endif %}" id="email" name="email" required value="{{ form_data.email|default:'' }}">
+                        <div class="invalid-feedback" id="emailError">{{ form_errors.email }}</div>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Пароль</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <input type="password" class="form-control{% if form_errors.password %} is-invalid{% endif %}" id="password" name="password" required>
+                        <div class="invalid-feedback" id="passwordError">{{ form_errors.password }}</div>
                     </div>
                     <div class="mb-3">
                         <label for="categories" class="form-label">Категории</label>
-                        <select multiple class="form-select" id="categories" name="categories" required>
+                        <select multiple class="form-select{% if form_errors.categories %} is-invalid{% endif %}" id="categories" name="categories" required>
                             {% for category in categories %}
-                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                <option value="{{ category.id }}" {% if category.id|stringformat:'s' in form_data.categories %}selected{% endif %}>{{ category.name }}</option>
                             {% endfor %}
                         </select>
+                        <div class="invalid-feedback" id="categoriesError">{{ form_errors.categories }}</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -99,7 +102,6 @@
     </div>
 </div>
 
-<!-- Модальное окно редактирования специалиста -->
 <div class="modal fade" id="editSupportModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -139,7 +141,46 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Обработка редактирования
+    $('#addSupportForm').on('submit', function(e) {
+        let valid = true;
+        $('#usernameError, #emailError, #passwordError, #categoriesError').text('');
+        $('#username, #email, #password, #categories').removeClass('is-invalid');
+
+        if (!$('#username').val().trim()) {
+            $('#usernameError').text('Пожалуйста, заполните имя пользователя.');
+            $('#username').addClass('is-invalid');
+            valid = false;
+        }
+        let email = $('#email').val().trim();
+        if (!email) {
+            $('#emailError').text('Пожалуйста, заполните email.');
+            $('#email').addClass('is-invalid');
+            valid = false;
+        } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+            $('#emailError').text('Введите корректный email.');
+            $('#email').addClass('is-invalid');
+            valid = false;
+        }
+        let password = $('#password').val();
+        if (!password) {
+            $('#passwordError').text('Пожалуйста, введите пароль.');
+            $('#password').addClass('is-invalid');
+            valid = false;
+        } else if (password.length < 8) {
+            $('#passwordError').text('Пароль должен быть не менее 8 символов.');
+            $('#password').addClass('is-invalid');
+            valid = false;
+        }
+        if (!$('#categories').val() || $('#categories').val().length === 0) {
+            $('#categoriesError').text('Выберите хотя бы одну категорию.');
+            $('#categories').addClass('is-invalid');
+            valid = false;
+        }
+        if (!valid) {
+            e.preventDefault();
+        }
+    });
+
     $('.edit-support').click(function() {
         var userId = $(this).data('user-id');
         var username = $(this).data('username');
@@ -149,13 +190,11 @@ $(document).ready(function() {
         $('#edit_email').val(email);
         $('#editSupportForm').attr('action', '/support-management/' + userId + '/edit/');
         
-        // Загрузка категорий пользователя через AJAX
         $.get('/support-management/' + userId + '/categories/', function(data) {
             $('#edit_categories').val(data.categories);
         });
     });
     
-    // Обработка удаления
     $('.delete-support').click(function() {
         if (confirm('Вы уверены, что хотите удалить специалиста ' + $(this).data('username') + '?')) {
             var userId = $(this).data('user-id');

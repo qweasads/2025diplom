@@ -5,8 +5,6 @@ urlpatterns = [
     path('tickets/', api_views.TicketListCreateView.as_view(), name='api-ticket-list'),
     path('tickets/<int:pk>/', api_views.TicketDetailView.as_view(), name='api-ticket-detail'),
     path('tickets/<int:ticket_id>/messages/', api_views.TicketMessageListCreateView.as_view(), name='api-ticket-messages'),
-    path('notifications/', api_views.NotificationListView.as_view(), name='api-notification-list'),
-    path('notifications/mark_all_read/', api_views.MarkAllNotificationsReadView.as_view(), name='api-notification-mark-all-read'),
     path('support-users/', api_views.SupportUserListView.as_view(), name='api-support-user-list'),
     path('users/', api_views.UserListView.as_view(), name='api-user-list'),
 ] 

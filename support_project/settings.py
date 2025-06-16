@@ -3,7 +3,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-your-secret-key-here'
+SECRET_KEY = '*q7y!no&i@i#oo3f2me@((^8gi1w=rl6igb2btsa5tv-g(ra+s'
 
 DEBUG = True
 
@@ -20,7 +20,6 @@ INSTALLED_APPS = [
     'report_system',
     'crispy_forms',
     'drf_yasg',
-    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -109,11 +108,22 @@ CSRF_TRUSTED_ORIGINS = [
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
-        'Token': {
+        'APIKey': {
             'type': 'apiKey',
             'name': 'Authorization',
             'in': 'header',
-            'description': 'Формат: Token <ваш_ключ>',
+            'description': 'API Key Authorization header. Example: "Api-Key YOUR_API_KEY"'
         }
-    }
+    },
+    'USE_SESSION_AUTH': False,
+    'USE_BASIC_AUTH': False,
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'support_system.authentication.APIKeyAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }

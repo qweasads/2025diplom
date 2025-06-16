@@ -10,6 +10,7 @@ class User(AbstractUser):
     is_support = models.BooleanField(default=False, verbose_name=_('Специалист поддержки'))
     is_admin = models.BooleanField(default=False, verbose_name=_('Администратор'))
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name=_('Телефон'))
+    api_key = models.CharField(max_length=64, unique=True, blank=True, null=True, verbose_name=_('API ключ'))
     
     class Meta:
         verbose_name = _('Пользователь')
@@ -17,6 +18,9 @@ class User(AbstractUser):
     
     def __str__(self):
         return self.username
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
 
 
 class Category(models.Model):
@@ -65,7 +69,7 @@ class Ticket(models.Model):
 class TicketMessage(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='messages', verbose_name=_('Заявка'))
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_('Пользователь'))
-    content = models.TextField(verbose_name=_('Сообщение'), blank=True, null=True)
+    content = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Дата создания'))
     
     class Meta:

@@ -955,3 +955,23 @@ body.dark-theme .breadcrumb .breadcrumb-item a {
     text-decoration: underline !important;
     cursor: pointer;
 }
+
+
+
+body.admin-panel .navbar-nav .nav-link {
+    font-size: 0.98rem !important;
+    padding-left: 0.7rem !important;
+    padding-right: 0.7rem !important;
+}
+body.admin-panel .navbar-nav .nav-item {
+    margin-right: 0.7rem !important;
+}
+
+.navbar-nav .nav-link {
+    font-size: 0.98rem !important;
+    padding-left: 0.7rem !important;
+    padding-right: 0.7rem !important;
+}
+.navbar-nav .nav-item {
+    margin-right: 0.7rem !important;
+}

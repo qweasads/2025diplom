@@ -8,7 +8,7 @@ from django.db.models import Q, Count, Avg, Max, Subquery, OuterRef, F
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-# from django.core.mail import send_mail
+import secrets
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -32,7 +32,6 @@ from .forms import (
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from rest_framework.authtoken.models import Token
 
 def index(request):
     """Главная страница"""
@@ -104,7 +103,26 @@ def dashboard(request):
 @login_required
 def profile(request):
     """Профиль пользователя"""
-    return render(request, 'support_system/profile.html')
+    user_profile = request.user
+
+    if request.method == 'POST':
+        if user_profile.is_admin:
+            if 'generate_api_key' in request.POST:
+                user_profile.api_key = secrets.token_hex(32)
+                user_profile.save()
+                messages.success(request, _('Новый API ключ успешно сгенерирован.'))
+            elif 'delete_api_key' in request.POST:
+                user_profile.api_key = None
+                user_profile.save()
+                messages.success(request, _('API ключ успешно удален.'))
+        else:
+            messages.error(request, _('У вас нет прав для выполнения этого действия.'))
+        return redirect('profile')
+
+    return render(request, 'support_system/profile.html', {
+        'user_profile': user_profile, 
+        'api_key': user_profile.api_key
+    })
 
 @login_required
 def notifications(request):
@@ -793,20 +811,3 @@ def edit_profile(request):
     else:
         form = UserProfileForm(instance=request.user)
     return render(request, 'support_system/edit_profile.html', {'form': form})
-
-@login_required
-def admin_api_token(request):
-    if not request.user.is_admin:
-        messages.error(request, 'Доступ запрещён')
-        return redirect('profile')
-    token = Token.objects.filter(user=request.user).first()
-    if request.method == 'POST':
-        if 'generate' in request.POST:
-            token, created = Token.objects.get_or_create(user=request.user)
-            messages.success(request, 'API-ключ сгенерирован!')
-        elif 'revoke' in request.POST:
-            if token:
-                token.delete()
-                token = None
-                messages.success(request, 'API-ключ отозван!')
-    return render(request, 'support_system/admin_api_token.html', {'token': token})

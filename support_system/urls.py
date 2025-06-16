@@ -48,8 +48,6 @@ urlpatterns = [
     path('reports/', include('report_system.urls')),
     
     path('profile/edit/', views.edit_profile, name='edit_profile'),
-    
-    path('profile/api-token/', views.admin_api_token, name='admin_api_token'),
 ]
 
 if settings.DEBUG:

@@ -11,38 +11,54 @@
             <div class="card-body">
                 <h5 class="card-title">Информация о пользователе</h5>
                 <div class="mb-3">
-                    <strong>Имя пользователя:</strong> {{ user.username }}
+                    <strong>Имя пользователя:</strong> {{ user_profile.username }}
                 </div>
                 <div class="mb-3">
-                    <strong>Имя:</strong> {{ user.first_name }}
+                    <strong>Имя:</strong> {{ user_profile.first_name }}
                 </div>
                 <div class="mb-3">
-                    <strong>Фамилия:</strong> {{ user.last_name }}
+                    <strong>Фамилия:</strong> {{ user_profile.last_name }}
                 </div>
                 <div class="mb-3">
-                    <strong>Email:</strong> {{ user.email }}
+                    <strong>Email:</strong> {{ user_profile.email }}
                 </div>
                 <div class="mb-3">
-                    <strong>Телефон:</strong> {{ user.phone|default:"Не указан" }}
+                    <strong>Телефон:</strong> {{ user_profile.phone|default:"Не указан" }}
                 </div>
                 <div class="mb-3">
                     <strong>Роль:</strong>
-                    {% if user.is_admin %}
+                    {% if user_profile.is_admin %}
                         Администратор
-                    {% elif user.is_support %}
+                    {% elif user_profile.is_support %}
                         Специалист поддержки
                     {% else %}
                         Пользователь
                     {% endif %}
                 </div>
+
+                {% if user_profile.is_admin %}
+                <h5 class="card-title mt-4">Управление API-ключом</h5>
+                <div class="mb-3">
+                    {% if api_key %}
+                        <strong>Ваш API ключ:</strong> <code style="word-break: break-all;">{{ api_key }}</code>
+                        <form method="post" class="d-inline ms-2">
+                            {% csrf_token %}
+                            <button type="submit" name="delete_api_key" class="btn btn-danger btn-sm">Удалить ключ</button>
+                        </form>
+                    {% else %}
+                        <p>API ключ не установлен.</p>
+                        <form method="post">
+                            {% csrf_token %}
+                            <button type="submit" name="generate_api_key" class="btn btn-success btn-sm">Сгенерировать API ключ</button>
+                        </form>
+                    {% endif %}
+                </div>
+                {% endif %}
                 
                 <div class="mt-4">
                     <a href="{% url 'user_tickets' %}" class="btn btn-primary">Мои заявки</a>
                     <a href="{% url 'notifications' %}" class="btn btn-primary ms-2">Уведомления</a>
                     <a href="{% url 'edit_profile' %}" class="btn btn-primary ms-2">Редактировать профиль</a>
-                    {% if user.is_admin %}
-                        <a href="{% url 'admin_api_token' %}" class="btn btn-outline-primary ms-2">API-ключ для интеграций</a>
-                    {% endif %}
                 </div>
             </div>
         </div>

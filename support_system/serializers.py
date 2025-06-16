@@ -2,6 +2,10 @@ from rest_framework import serializers
 from .models import Ticket, TicketMessage, Notification, User
 
 class UserShortSerializer(serializers.ModelSerializer):
+    username = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+
     class Meta:
         model = User
         fields = ['id', 'username', 'first_name', 'last_name']
@@ -21,7 +25,6 @@ class TicketSerializer(serializers.ModelSerializer):
         fields = '__all__'
         extra_fields = ['support_user_id']
         read_only_fields = ['user', 'support_user']
-        # support_user_id write-only, support_user read-only
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['support_user_id'] = instance.support_user.id if instance.support_user else None
@@ -29,9 +32,11 @@ class TicketSerializer(serializers.ModelSerializer):
 
 class TicketMessageSerializer(serializers.ModelSerializer):
     user = UserShortSerializer(read_only=True)
+    text = serializers.CharField(source='content')
     class Meta:
         model = TicketMessage
-        fields = '__all__'
+        fields = ['id', 'ticket', 'user', 'text', 'created_at']
+        read_only_fields = ['ticket']
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:

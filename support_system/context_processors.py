@@ -1,5 +1,4 @@
 def notifications_count(request):
-    # Отображение непрочитанных уведомлений
     if request.user.is_authenticated:
         from .models import Notification
         count = Notification.objects.filter(user=request.user, is_read=False).count()

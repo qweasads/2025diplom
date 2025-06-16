@@ -8,7 +8,7 @@ from django.db.models import Q, Count, Avg, Max, Subquery, OuterRef, F
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-from django.core.mail import send_mail
+# from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -90,7 +90,7 @@ def dashboard(request):
     ).order_by('-avg_score')[:5]
     specialists_rating = User.objects.filter(is_support=True).annotate(
         avg_score=Avg('specialist_ratings__score'),
-        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed'))
+        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed'), distinct=True)
     ).order_by('-avg_score', '-tickets_count')[:10]
     return render(request, 'support_system/dashboard.html', {
         'user_tickets': user_tickets,
@@ -282,7 +282,6 @@ def update_ticket_status(request, ticket_id):
 
 @login_required
 def support_tickets(request):
-    """Список заявок для специалиста поддержки и администратора"""
     user = request.user
     filter_type = request.GET.get('filter')
 
@@ -341,7 +340,6 @@ def support_tickets(request):
 
 @login_required
 def admin_panel(request):
-    """Админ-панель"""
     if not request.user.is_admin:
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('dashboard')
@@ -349,7 +347,6 @@ def admin_panel(request):
 
 @login_required
 def assign_ticket(request, ticket_id):
-    """Назначение заявки специалисту поддержки"""
     if not request.user.is_admin:
         return JsonResponse({'error': 'Недостаточно прав'}, status=403)
     
@@ -363,7 +360,6 @@ def assign_ticket(request, ticket_id):
 
 @login_required
 def delete_ticket(request, ticket_id):
-    """Удаление заявки"""
     if not request.user.is_admin:
         return JsonResponse({'error': 'Недостаточно прав'}, status=403)
     
@@ -389,7 +385,6 @@ def create_user(request):
 
 @login_required
 def edit_user(request, user_id):
-    """Редактирование пользователя в админ-панели"""
     if not request.user.is_admin:
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('dashboard')
@@ -405,7 +400,6 @@ def edit_user(request, user_id):
 
 @login_required
 def delete_user(request, user_id):
-    """Удаление пользователя"""
     if not request.user.is_admin:
         return JsonResponse({'error': 'Недостаточно прав'}, status=403)
     
@@ -433,7 +427,6 @@ def support_users(request):
 
 @login_required
 def create_support(request):
-    """Создание специалиста поддержки"""
     if not request.user.is_admin:
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('dashboard')
@@ -779,7 +772,7 @@ def reports_dashboard(request):
     ).order_by('-avg_score')[:5]
     specialists_rating = User.objects.filter(is_support=True).annotate(
         avg_score=Avg('specialist_ratings__score'),
-        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed', assigned_tickets__support_user=OuterRef('pk')))
+        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed'), distinct=True)
     ).order_by('-avg_score', '-tickets_count')[:10]
     context = {
         'avg_rating': avg_rating,

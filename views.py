@@ -6,7 +6,6 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
@@ -287,15 +286,6 @@ def reply_ticket(request, ticket_id):
                     type='message_created',
                     text=f'Новый ответ на вашу заявку #{ticket.id}'
                 )
-                
-                # Отправляем email-уведомление пользователю
-                send_mail(
-                    f'Новый ответ на вашу заявку #{ticket.id}',
-                    f'Здравствуйте, {ticket.user.get_full_name()}!\n\nВы получили новый ответ на вашу заявку #{ticket.id}: {ticket.title}.\n\nПожалуйста, войдите в систему, чтобы просмотреть ответ.\n\nС уважением,\nСлужба поддержки',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [ticket.user.email],
-                    fail_silently=True,
-                )
             
             messages.success(request, 'Сообщение успешно отправлено.')
             return redirect('ticket_detail', ticket_id=ticket.id)
@@ -422,7 +412,7 @@ def update_ticket_status(request, ticket_id):
     """Обновление статуса заявки"""
     ticket = get_object_or_404(Ticket, id=ticket_id)
     
-    # Проверяем права доступа
+    # Проверка прав доступа
     if not (request.user.is_admin or 
             (request.user.is_support and (request.user == ticket.support_user or 
                                          ticket.category in request.user.categories.all()))):
@@ -435,21 +425,12 @@ def update_ticket_status(request, ticket_id):
     ticket.status = status
     ticket.save()
     
-    # Создаем уведомление для пользователя
+    # Уведомление для пользователя
     Notification.objects.create(
         user=ticket.user,
         ticket=ticket,
         type='ticket_updated',
         text=f'Статус вашей заявки #{ticket.id} изменен на "{ticket.get_status_display()}"'
-    )
-    
-    # Отправляем email-уведомление пользователю
-    send_mail(
-        f'Статус вашей заявки #{ticket.id} изменен',
-        f'Здравствуйте, {ticket.user.get_full_name()}!\n\nСтатус вашей заявки #{ticket.id}: {ticket.title} изменен на "{ticket.get_status_display()}".\n\nС уважением,\nСлужба поддержки',
-        settings.DEFAULT_FROM_EMAIL,
-        [ticket.user.email],
-        fail_silently=True,
     )
     
     return JsonResponse({'success': True})

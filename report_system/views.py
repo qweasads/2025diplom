@@ -35,7 +35,7 @@ def reports_dashboard(request):
     ).order_by('-avg_score')[:5]
     specialists_rating = User.objects.filter(is_support=True).annotate(
         avg_score=Avg('specialist_ratings__score'),
-        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed'))
+        tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='closed'), distinct=True)
     ).order_by('-avg_score', '-tickets_count')[:10]
     return render(request, 'report_system/dashboard.html', {
         'total_tickets': total_tickets,
@@ -63,13 +63,11 @@ def generate_tickets_report(request):
     end_date = request.GET.get('end_date')
     category_id = request.GET.get('category_id')
     
-    # Базовый запрос
     if request.user.is_superuser:
         tickets = Ticket.objects.all()
     else:
         tickets = Ticket.objects.filter(support_user=request.user)
     
-    # Применяем фильтры
     if start_date:
         tickets = tickets.filter(created_at__gte=start_date)
     if end_date:
@@ -175,7 +173,6 @@ def generate_pdf_report(report):
     
     # Заполняем данные в зависимости от типа отчета
     p.drawString(100, 750, f"Отчет: {report.name}")
-    # Добавляем данные...
     
     p.showPage()
     p.save()

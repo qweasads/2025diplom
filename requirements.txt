@@ -10,3 +10,5 @@ tzdata==2025.2
 django-cors-headers==4.4.0
 pandas
 matplotlib
+openpyxl
+reportlab

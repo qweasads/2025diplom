@@ -7,7 +7,7 @@ SECRET_KEY = '*q7y!no&i@i#oo3f2me@((^8gi1w=rl6igb2btsa5tv-g(ra+s'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '127.0.0.1:8080']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -102,11 +102,12 @@ LOGOUT_REDIRECT_URL = '/login/'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://help-desk-24.ru",
-    "https://help-desk-24.ru",
+    "http://127.0.0.1:8080",
+    "https://127.0.0.1:8080",
 ]
 
 SWAGGER_SETTINGS = {
+    'DEFAULT_API_URL': 'http://127.0.0.1:8080/api/',
     'SECURITY_DEFINITIONS': {
         'APIKey': {
             'type': 'apiKey',

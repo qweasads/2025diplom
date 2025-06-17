@@ -4,7 +4,6 @@ django-crispy-forms==2.4
 djangorestframework==3.16.0
 drf-yasg==1.21.10
 mysqlclient==2.2.7
-PyJWT==2.9.0
 pytz==2025.2
 sqlparse==0.5.3
 tzdata==2025.2

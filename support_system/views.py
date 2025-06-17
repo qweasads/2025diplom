@@ -242,7 +242,7 @@ def reply_ticket(request, ticket_id):
         
         # Смена статуса на "в работе"
         if request.user == ticket.support_user and ticket.status == 'open':
-            ticket.status = 'in_progress'
+            ticket.status = 'in-progress'
             ticket.save()
         
         # Уведомление специалиста о новом ответе пользователя
@@ -434,7 +434,7 @@ def support_users(request):
         return redirect('dashboard')
     
     support_users = User.objects.filter(is_support=True).annotate(
-        active_tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='in_progress'))
+        active_tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='in-progress'))
     )
     categories = Category.objects.all()
     
@@ -469,7 +469,7 @@ def create_support(request):
             errors['categories'] = 'Выберите хотя бы одну категорию.'
         if errors:
             support_users = User.objects.filter(is_support=True).annotate(
-                active_tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='in_progress'))
+                active_tickets_count=Count('assigned_tickets', filter=Q(assigned_tickets__status='in-progress'))
             )
             categories = Category.objects.all()
             return render(request, 'support_system/admin/support_users.html', {
@@ -746,7 +746,7 @@ def notifications_processor(request):
             day_ago = timezone.now() - timedelta(days=1)
             context['waiting_response_count'] = Ticket.objects.filter(
                 support_user=request.user,
-                status='in_progress'
+                status='in-progress'
             ).filter(
                 Q(messages__isnull=True) |
                 Q(messages__created_at__lt=day_ago)
